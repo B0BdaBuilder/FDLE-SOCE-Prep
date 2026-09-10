@@ -86,6 +86,16 @@
   .concept-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;}
   .concept-row:last-child{border-bottom:none;}
   .miss-count{color:var(--red);font-weight:600;}
+  .fb-field{margin-bottom:14px;}
+  .fb-field label{display:block;font-size:13px;font-weight:600;color:var(--navy);margin-bottom:6px;}
+  textarea.fb-input,input.fb-input{width:100%;padding:9px 11px;border:1px solid var(--line);font-size:14px;font-family:var(--font-body);background:#fff;}
+  textarea.fb-input{min-height:92px;resize:vertical;}
+  .fb-chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .fb-chip{border:1.5px solid var(--line);padding:8px 14px;cursor:pointer;font-size:13.5px;}
+  .fb-chip.active{border-color:var(--navy);background:var(--navy);color:#fff;}
+  .fb-status{margin-top:10px;font-size:13.5px;}
+  .fb-status.ok{color:var(--green);}
+  .fb-status.err{color:var(--red);}
 </style>
 </head>
 <body>
@@ -95,6 +105,17 @@
   </div>
 </div>
 <div id="root"></div>
+
+<!-- Static stub so Netlify detects the feedback form at deploy time.
+     The live form is rendered by JS on the results screen and submits to this via fetch. -->
+<form name="feedback" data-netlify="true" netlify-honeypot="bot-field" hidden aria-hidden="true">
+  <input type="hidden" name="form-name" value="feedback">
+  <input type="text" name="bot-field">
+  <input type="text" name="feedback-type">
+  <textarea name="message"></textarea>
+  <input type="email" name="email">
+  <textarea name="context"></textarea>
+</form>
 <script>
 const QUESTION_BANK =
 [
@@ -4293,7 +4314,121 @@ function renderResults(){
   card.appendChild(btnRow);
 
   wrap.appendChild(card);
+  wrap.appendChild(renderFeedbackCard(r));
   return wrap;
+}
+
+// ---------- FEEDBACK ----------
+function buildFeedbackContext(r){
+  const parts = [];
+  if(r){
+    const bySubj = {};
+    r.results.forEach(res=>{
+      if(!bySubj[res.subject]) bySubj[res.subject] = {c:0,t:0};
+      bySubj[res.subject].t++;
+      if(res.correctAnswer) bySubj[res.subject].c++;
+    });
+    const subjStr = Object.entries(bySubj).map(([k,d])=>`${k} ${d.c}/${d.t}`).join(", ");
+    parts.push(`session=${r.mode}`);
+    parts.push(`score=${r.correctCount}/${r.total} (${r.rawPct}%)`);
+    parts.push(`subjects=[${subjStr}]`);
+    parts.push(`questionIds=${(r.questionIds||[]).join(" ")}`);
+    parts.push(`sessionTime=${r.timestamp}`);
+  } else {
+    parts.push("session=none");
+  }
+  parts.push(`submittedAt=${new Date().toISOString()}`);
+  try { parts.push(`page=${location.href}`); } catch(e){}
+  try { parts.push(`ua=${navigator.userAgent}`); } catch(e){}
+  return parts.join("\n");
+}
+
+function encodeForm(data){
+  return Object.keys(data).map(k=>encodeURIComponent(k)+"="+encodeURIComponent(data[k])).join("&");
+}
+
+function renderFeedbackCard(r){
+  const card = el("div",{class:"card"});
+  card.appendChild(el("h2",{},["Feedback & bug reports"]));
+  card.appendChild(el("p",{class:"muted"},["Spotted a wrong answer key, a confusing question, a typo, or something broken? Tell us here. Details about this session are attached automatically to help us track it down."]));
+
+  const types = ["Bug / something broken","Question or answer is wrong","Confusing wording","Suggestion","Other"];
+  let selectedType = "";
+  const typeField = el("div",{class:"fb-field"});
+  typeField.appendChild(el("label",{},["What kind of feedback is this?"]));
+  const chips = el("div",{class:"fb-chips"});
+  const chipEls = [];
+  types.forEach(t=>{
+    const chip = el("div",{class:"fb-chip",onclick:()=>{
+      selectedType = t;
+      chipEls.forEach(c=>c.classList.remove("active"));
+      chip.classList.add("active");
+      status.textContent = "";
+      status.className = "fb-status";
+    }},[t]);
+    chipEls.push(chip);
+    chips.appendChild(chip);
+  });
+  typeField.appendChild(chips);
+  card.appendChild(typeField);
+
+  const msgField = el("div",{class:"fb-field"});
+  msgField.appendChild(el("label",{},["Your message"]));
+  const msgInput = el("textarea",{class:"fb-input",placeholder:"Describe what you saw. If it's about a specific question, quote a few words of it so we can find it."});
+  msgField.appendChild(msgInput);
+  card.appendChild(msgField);
+
+  const emailField = el("div",{class:"fb-field"});
+  emailField.appendChild(el("label",{},["Email (optional — only if you want a reply)"]));
+  const emailInput = el("input",{class:"fb-input",type:"email",placeholder:"you@example.com"});
+  emailField.appendChild(emailInput);
+  card.appendChild(emailField);
+
+  const status = el("div",{class:"fb-status"});
+
+  const submitBtn = el("button",{class:"btn btn-gold btn-sm",onclick:()=>{
+    const msg = msgInput.value.trim();
+    if(!selectedType){ status.textContent = "Please pick a feedback type above."; status.className = "fb-status err"; return; }
+    if(msg.length < 4){ status.textContent = "Please add a bit more detail in your message."; status.className = "fb-status err"; return; }
+    const email = emailInput.value.trim();
+    submitBtn.disabled = true;
+    status.textContent = "Sending…";
+    status.className = "fb-status";
+    const payload = {
+      "form-name": "feedback",
+      "bot-field": "",
+      "feedback-type": selectedType,
+      "message": msg,
+      "email": email,
+      "context": buildFeedbackContext(r)
+    };
+    fetch("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: encodeForm(payload)
+    }).then(res=>{
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      status.textContent = "Thanks — your feedback was sent. We review every message" + (selectedType.indexOf("Bug")===0 ? " and handle bug reports first." : ".");
+      status.className = "fb-status ok";
+      msgInput.value = "";
+      emailInput.value = "";
+      selectedType = "";
+      chipEls.forEach(c=>c.classList.remove("active"));
+    }).catch(err=>{
+      submitBtn.disabled = false;
+      const body = encodeURIComponent("Type: "+selectedType+"\n\n"+msg+"\n\n---\n"+buildFeedbackContext(r));
+      status.innerHTML = "";
+      status.appendChild(document.createTextNode("Couldn't send automatically ("+String(err.message||err)+"). "));
+      status.appendChild(el("a",{href:"mailto:robert@legallift.ai?subject="+encodeURIComponent("FDLE SOCE Prep feedback")+"&body="+body,class:"linklike"},["Send it by email instead"]));
+      status.className = "fb-status err";
+    });
+  }},["Send feedback"]);
+
+  const btnWrap = el("div",{style:"margin-top:4px;"});
+  btnWrap.appendChild(submitBtn);
+  card.appendChild(btnWrap);
+  card.appendChild(status);
+  return card;
 }
 
 // ---------- DASHBOARD ----------
