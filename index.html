@@ -4045,6 +4045,21 @@ function el(tag, opts, children){
   return e;
 }
 
+function scrollToTop(){
+  try { window.scrollTo(0, 0); } catch(e){}
+  try { document.documentElement.scrollTop = 0; document.body.scrollTop = 0; } catch(e){}
+}
+
+// Move to another question and reset the viewport to the top so long
+// question/answer blocks don't leave the reader scrolled down.
+function navigateQuestion(delta){
+  const exam = state.currentExam;
+  if(!exam) return;
+  exam.idx = Math.max(0, Math.min(exam.questions.length-1, exam.idx + delta));
+  render();
+  scrollToTop();
+}
+
 // ---------- HOME ----------
 function renderHome(){
   const wrap = document.createElement("div");
@@ -4278,6 +4293,7 @@ function startExam(mode){
   };
   state.screen = "quiz";
   render();
+  scrollToTop();
   if(timed){ timerHandle = setInterval(tickTimer, 1000); tickTimer(); }
 }
 
@@ -4371,11 +4387,11 @@ function renderQuiz(){
   wrap.appendChild(card);
 
   const navRow = el("div",{class:"nav-row"});
-  const prevBtn = el("button",{class:"btn btn-outline btn-sm",disabled: exam.idx===0, onclick:()=>{ exam.idx--; render(); }},["\u2190 Previous"]);
+  const prevBtn = el("button",{class:"btn btn-outline btn-sm",disabled: exam.idx===0, onclick:()=>navigateQuestion(-1)},["\u2190 Previous"]);
   navRow.appendChild(prevBtn);
 
   if(exam.idx < total-1){
-    const nextBtn = el("button",{class:"btn btn-sm",disabled: !answered, onclick:()=>{ exam.idx++; render(); }},["Next \u2192"]);
+    const nextBtn = el("button",{class:"btn btn-sm",disabled: !answered, onclick:()=>navigateQuestion(1)},["Next \u2192"]);
     navRow.appendChild(nextBtn);
   } else {
     const finishBtn = el("button",{class:"btn btn-gold btn-sm",disabled: !answered, onclick:finishExam},["Finish & See Results"]);
@@ -4419,6 +4435,7 @@ async function finishExam(){
   state.currentExam = null;
   state.screen = "results";
   render();
+  scrollToTop();
 }
 
 // ---------- RESULTS ----------
@@ -4447,8 +4464,6 @@ function renderResults(){
     card.appendChild(el("p",{},[
       el("span",{class:"status-badge "+(passed?"status-pass":"status-fail")},[passed ? "PASS (\u2265152/190 scored)" : "Below passing threshold (152/190 scored)"])
     ]));
-  } else {
-    card.appendChild(el("p",{class:"muted"},[`This bank does not yet contain the full 190 scored questions needed to apply the official 152-correct passing threshold. Once the bank reaches full size, this screen will show pass/fail exactly as the real SOCE reports it.`]));
   }
 
   // by subject
@@ -4727,6 +4742,7 @@ function startRemediation(repeatedMisses){
   state.currentExam = { mode:"remediation", questions: chosen, answers:{}, idx:0, submitted:{}, timed:false };
   state.screen = "quiz";
   render();
+  scrollToTop();
 }
 
 // ---------- INIT ----------
