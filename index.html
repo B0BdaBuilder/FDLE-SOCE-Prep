@@ -96,6 +96,16 @@
   .fb-status{margin-top:10px;font-size:13.5px;}
   .fb-status.ok{color:var(--green);}
   .fb-status.err{color:var(--red);}
+  .scope-book{margin-bottom:14px;}
+  .scope-book:last-child{margin-bottom:0;}
+  .scope-book-head{font-weight:600;color:var(--navy);border-bottom:1px solid var(--line);}
+  .subject-check.scope-chapter{padding-left:22px;}
+  .quiz-timer-bar{display:flex;align-items:baseline;justify-content:space-between;background:var(--navy);color:#EDE7D8;padding:8px 14px;margin-bottom:12px;}
+  .quiz-timer-label{font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:#B8C4D6;}
+  .quiz-timer{font-family:var(--font-head);font-size:22px;font-variant-numeric:tabular-nums;color:#fff;}
+  .quiz-timer.warn{color:var(--gold-light);}
+  .quiz-timer.danger{color:#F4B6AB;}
+  .timer-banner{background:var(--red-bg);color:var(--red);border:1px solid var(--red);font-size:13px;font-weight:600;padding:8px 14px;margin-bottom:12px;}
 </style>
 </head>
 <body>
@@ -3916,6 +3926,37 @@ const TARGET_WEIGHTS = { // approximate target % of full bank, per curriculum-an
   "CJK 0324":9.7,"CJK 0326":10.8,"CJK 0336":7.4,"CJK 0031":19.3,"CJK 0040":7.4,"CJK 0051":10.6
 };
 
+// Which textbook + chapter each CJK subject area comes from (1:1 mapping, verified against
+// the source strings on every question in the bank).
+const SUBJECT_META = {
+  "CJK 0301":{book:"corrections",ch:1}, "CJK 0355":{book:"corrections",ch:2},
+  "CJK 0306":{book:"corrections",ch:3}, "CJK 0111":{book:"corrections",ch:4},
+  "CJK 0327":{book:"corrections",ch:5}, "CJK 0321":{book:"corrections",ch:6},
+  "CJK 0324":{book:"corrections",ch:7}, "CJK 0326":{book:"corrections",ch:8},
+  "CJK 0336":{book:"corrections",ch:9},
+  "CJK 0031":{book:"highliability",ch:2}, "CJK 0040":{book:"highliability",ch:3},
+  "CJK 0051":{book:"highliability",ch:4}
+};
+const BOOKS = [
+  { id:"corrections", title:"Corrections, Volume 1 [2025.07]", short:"Corrections V1",
+    chapters:["CJK 0301","CJK 0355","CJK 0306","CJK 0111","CJK 0327","CJK 0321","CJK 0324","CJK 0326","CJK 0336"] },
+  { id:"highliability", title:"High Liability, Volume 2 [2025.07]", short:"High Liability V2",
+    chapters:["CJK 0031","CJK 0040","CJK 0051"] }
+];
+function bookById(id){ return BOOKS.find(b=>b.id===id); }
+
+// The real FDLE Corrections SOCE is a 200-question sitting (210 minutes under the formula below).
+const STATE_EXAM_COUNT = 200;
+
+// State exam time allowance: ~1.05 min/question, with a 15-minute floor for short quizzes.
+// Matches the published references (10 q -> 15:00 via the floor, 200 q -> 210:00).
+function timeLimitSec(count){ return Math.max(15, Math.ceil(count * 1.05)) * 60; }
+function fmtClock(sec){
+  sec = Math.max(0, Math.round(sec));
+  const m = Math.floor(sec/60), s = sec%60;
+  return m + ":" + String(s).padStart(2,"0");
+}
+
 function prepareInstance(q){
   const entries = shuffle(Object.entries(q.choices));
   const letters = ["A","B","C","D"];
@@ -3970,9 +4011,14 @@ const state = {
   setupMode: null, // 'quick' | 'full' | 'remediation'
   setupCount: 25,
   setupSubjects: new Set(SUBJECT_ORDER),
+  setupTimed: false,
   lastResult: null,
   reviewMode: false
 };
+
+// Countdown handle for timed exams (module-level so render() re-renders don't lose it).
+let timerHandle = null;
+function stopTimer(){ if(timerHandle){ clearInterval(timerHandle); timerHandle = null; } }
 
 function render(){
   const root = document.getElementById("root");
@@ -4022,14 +4068,27 @@ function renderHome(){
   actionsCard.appendChild(el("h2",{},["Practice"]));
   const actions = el("div",{class:"home-actions"});
 
-  const quickTile = el("div",{class:"action-tile",onclick:()=>{state.setupMode="quick";state.screen="setup";render();}});
+  const enterSetup = (mode)=>{
+    state.setupMode = mode;
+    state.setupTimed = (mode === "exam");
+    if(mode === "exam") state.setupSubjects = new Set(SUBJECT_ORDER); // full-scope simulation
+    state.screen = "setup";
+    render();
+  };
+
+  const examTile = el("div",{class:"action-tile",onclick:()=>enterSetup("exam")});
+  examTile.appendChild(el("h3",{},["State Exam Simulation"]));
+  examTile.appendChild(el("p",{},[`Both textbooks, ${STATE_EXAM_COUNT} questions, ${fmtClock(timeLimitSec(STATE_EXAM_COUNT))} on the clock — the real SOCE format. Timed by default.`]));
+  actions.appendChild(examTile);
+
+  const quickTile = el("div",{class:"action-tile",onclick:()=>enterSetup("quick")});
   quickTile.appendChild(el("h3",{},["Quick Quiz"]));
-  quickTile.appendChild(el("p",{},["Choose a question count and, optionally, specific subject areas. Best for focused daily practice."]));
+  quickTile.appendChild(el("p",{},["Pick a question count, choose which book and chapters to draw from, and optionally run it timed. Best for focused daily practice."]));
   actions.appendChild(quickTile);
 
-  const fullTile = el("div",{class:"action-tile",onclick:()=>{state.setupMode="full";state.screen="setup";render();}});
+  const fullTile = el("div",{class:"action-tile",onclick:()=>enterSetup("full")});
   fullTile.appendChild(el("h3",{},["Full Practice Exam"]));
-  fullTile.appendChild(el("p",{},["Uses the entire current bank as one timed-feel sitting, proportioned across subjects. Will scale to the real 200-question / 190-scored format as the bank grows."]));
+  fullTile.appendChild(el("p",{},["One sitting over every question in the books and chapters you select, in randomized order. Run it timed to simulate exam conditions."]));
   actions.appendChild(fullTile);
 
   actionsCard.appendChild(actions);
@@ -4056,13 +4115,85 @@ function renderHome(){
 }
 
 // ---------- SETUP ----------
+function subjectCount(code){ return QUESTION_BANK.filter(q=>q.subject===code).length; }
+
+// Book-grouped chapter picker, shared by Quick Quiz and Full Exam setup.
+function renderScopePicker(){
+  const row = el("div",{class:"setup-row"});
+  row.appendChild(el("label",{},["Books & chapters to draw from"]));
+  BOOKS.forEach(book=>{
+    const chapters = book.chapters.filter(code=>subjectCount(code)>0);
+    if(chapters.length===0) return;
+    const selCount = chapters.filter(code=>state.setupSubjects.has(code)).length;
+    const block = el("div",{class:"scope-book"});
+
+    const head = el("div",{class:"subject-check scope-book-head"});
+    const bookCb = el("input",{type:"checkbox"});
+    bookCb.checked = selCount === chapters.length;
+    bookCb.indeterminate = selCount > 0 && selCount < chapters.length;
+    bookCb.addEventListener("change",()=>{
+      if(bookCb.checked) chapters.forEach(c=>state.setupSubjects.add(c));
+      else chapters.forEach(c=>state.setupSubjects.delete(c));
+      render();
+    });
+    head.appendChild(bookCb);
+    head.appendChild(el("span",{},[`Whole book \u2014 ${book.title}`]));
+    const totalAvail = chapters.reduce((s,c)=>s+subjectCount(c),0);
+    head.appendChild(el("span",{class:"subject-count"},[`${totalAvail} available`]));
+    block.appendChild(head);
+
+    chapters.forEach(code=>{
+      const meta = SUBJECT_META[code];
+      const rowc = el("div",{class:"subject-check scope-chapter"});
+      const cb = el("input",{type:"checkbox"});
+      cb.checked = state.setupSubjects.has(code);
+      cb.addEventListener("change",()=>{
+        if(cb.checked) state.setupSubjects.add(code); else state.setupSubjects.delete(code);
+        render();
+      });
+      rowc.appendChild(cb);
+      rowc.appendChild(el("span",{},[`Ch. ${meta.ch} \u2014 ${SUBJECT_LABELS[code]}`]));
+      rowc.appendChild(el("span",{class:"subject-count"},[`${subjectCount(code)} available`]));
+      block.appendChild(rowc);
+    });
+    row.appendChild(block);
+  });
+  return row;
+}
+
+function renderTimedToggle(projectedCount){
+  const row = el("div",{class:"setup-row"});
+  const line = el("div",{class:"subject-check"});
+  const cb = el("input",{type:"checkbox"});
+  cb.checked = state.setupTimed;
+  cb.addEventListener("change",()=>{ state.setupTimed = cb.checked; render(); });
+  line.appendChild(cb);
+  line.appendChild(el("span",{},["Timed mode (simulate exam conditions)"]));
+  row.appendChild(line);
+  if(state.setupTimed && projectedCount > 0){
+    row.appendChild(el("p",{class:"bank-status"},[
+      `${projectedCount} question${projectedCount!==1?"s":""} \u2192 ${fmtClock(timeLimitSec(projectedCount))} allowed. The clock auto-submits your exam at 0:00.`
+    ]));
+  } else if(!state.setupTimed){
+    row.appendChild(el("p",{class:"bank-status"},["Off \u2014 answer at your own pace."]));
+  }
+  return row;
+}
+
+function projectedQuestionCount(mode, filteredCount){
+  if(mode === "full") return filteredCount;
+  if(mode === "exam") return Math.min(STATE_EXAM_COUNT, filteredCount);
+  return Math.min(state.setupCount, filteredCount);
+}
+
 function renderSetup(){
   const wrap = document.createElement("div");
   const card = el("div",{class:"card"});
-  const isFull = state.setupMode === "full";
-  card.appendChild(el("h2",{},[isFull ? "Full Practice Exam" : "Quick Quiz Setup"]));
+  const mode = state.setupMode;
+  const titles = { quick:"Quick Quiz Setup", full:"Full Practice Exam", exam:"State Exam Simulation" };
+  card.appendChild(el("h2",{},[titles[mode] || "Quiz Setup"]));
 
-  if(!isFull){
+  if(mode === "quick"){
     const countRow = el("div",{class:"setup-row"});
     countRow.appendChild(el("label",{},["Number of questions"]));
     const opts = el("div",{class:"count-opts"});
@@ -4072,47 +4203,47 @@ function renderSetup(){
     });
     countRow.appendChild(opts);
     card.appendChild(countRow);
+  }
 
-    const subjRow = el("div",{class:"setup-row"});
-    subjRow.appendChild(el("label",{},["Subject areas (uncheck to exclude)"]));
-    SUBJECT_ORDER.forEach(code=>{
-      const count = QUESTION_BANK.filter(q=>q.subject===code).length;
-      if(count===0) return;
-      const checked = state.setupSubjects.has(code);
-      const row = el("div",{class:"subject-check"});
-      const cb = el("input",{type:"checkbox"});
-      cb.checked = checked;
-      cb.addEventListener("change",()=>{
-        if(cb.checked) state.setupSubjects.add(code); else state.setupSubjects.delete(code);
-      });
-      row.appendChild(cb);
-      row.appendChild(el("span",{},[`${code} \u2014 ${SUBJECT_LABELS[code]}`]));
-      row.appendChild(el("span",{class:"subject-count"},[`${count} available`]));
-      subjRow.appendChild(row);
-    });
-    card.appendChild(subjRow);
-  } else {
+  card.appendChild(renderScopePicker());
+
+  const filteredCount = QUESTION_BANK.filter(q=>state.setupSubjects.has(q.subject)).length;
+  const projected = projectedQuestionCount(mode, filteredCount);
+
+  if(mode === "exam"){
     card.appendChild(el("p",{class:"muted"},[
-      `This session will draw all ${QUESTION_BANK.length} currently available questions, proportioned as close as possible to the target curriculum weighting, in randomized order with randomized answer positions. Once the bank reaches its full size, this same mode will generate a genuine 200-question exam (190 scored, 10 unscored) and report both your raw and scored percentage.`
+      `Simulates the real FDLE Corrections SOCE: ${STATE_EXAM_COUNT} questions drawn from both textbooks, randomized, timed at ${fmtClock(timeLimitSec(STATE_EXAM_COUNT))}. `
+      + (filteredCount < STATE_EXAM_COUNT
+          ? `The bank currently holds ${filteredCount}, so this run will use all ${filteredCount} (allowance scales to ${fmtClock(timeLimitSec(projected))}). `
+          : `Chapters are pre-selected to the full curriculum; you can narrow the scope above if you want a partial simulation. `)
+      + `Pass/fail is reported at the 152-correct threshold once a run has 190+ questions.`
+    ]));
+  } else if(mode === "full"){
+    card.appendChild(el("p",{class:"muted"},[
+      `This exam will use all ${filteredCount} question${filteredCount!==1?"s":""} from the chapters selected above, in randomized order with randomized answer positions. As the bank grows toward the full 200-question / 190-scored format, this screen will report both your raw and scored percentage.`
     ]));
   }
 
-  const startBtn = el("button",{class:"btn btn-gold",onclick:()=>startExam(isFull ? "full" : "quick")},[isFull ? "Begin Full Exam" : "Start Quiz"]);
+  card.appendChild(renderTimedToggle(projected));
+
+  const noneSelected = filteredCount === 0;
+  const startLabels = { quick:"Start Quiz", full:"Begin Full Exam", exam:"Begin State Exam Simulation" };
+  const startBtn = el("button",{class:"btn btn-gold",disabled:noneSelected,onclick:()=>startExam(mode)},[startLabels[mode] || "Start"]);
   card.appendChild(el("div",{},[startBtn]));
+  if(noneSelected){
+    card.appendChild(el("p",{class:"bank-status"},["Select at least one chapter to begin."]));
+  }
   card.appendChild(el("div",{style:"margin-top:14px;"},[el("a",{class:"linklike",onclick:()=>{state.screen="home";render();}},["\u2190 Back"])]));
   wrap.appendChild(card);
   return wrap;
 }
 
 function pickExamPool(mode){
-  let pool = QUESTION_BANK.slice();
-  if(mode === "quick"){
-    pool = pool.filter(q=>state.setupSubjects.has(q.subject));
-  }
+  let pool = QUESTION_BANK.filter(q=>state.setupSubjects.has(q.subject));
   // exclude questions seen in the most recent 2 attempts, if enough remain
   const recentIds = new Set();
   state.attempts.slice(-2).forEach(a=>{ (a.questionIds||[]).forEach(id=>recentIds.add(id)); });
-  const target = mode==="full" ? pool.length : Math.min(state.setupCount, pool.length);
+  const target = projectedQuestionCount(mode, pool.length);
   const fresh = pool.filter(q=>!recentIds.has(q.id));
   let finalPool;
   let reused = false;
@@ -4129,15 +4260,46 @@ function pickExamPool(mode){
 function startExam(mode){
   const {chosen, reused} = pickExamPool(mode);
   if(chosen.length === 0){
-    alert("No questions available for the selected subjects yet.");
+    alert("No questions available for the selected chapters yet.");
     return;
   }
   const questions = shuffle(chosen).map(prepareInstance);
+  stopTimer();
+  const timed = !!state.setupTimed;
+  const limitSec = timeLimitSec(questions.length);
+  const startedTs = Date.now();
   state.currentExam = {
-    mode, questions, answers:{}, idx:0, reusedWarning:reused, submitted:{}
+    mode, questions, answers:{}, idx:0, reusedWarning:reused, submitted:{},
+    timed, limitSec, startedTs,
+    deadlineTs: startedTs + limitSec*1000,
+    warned: false,
+    scopeChapters: [...state.setupSubjects],
+    scopeBooks: BOOKS.filter(b=>b.chapters.some(c=>state.setupSubjects.has(c))).map(b=>b.id)
   };
   state.screen = "quiz";
   render();
+  if(timed){ timerHandle = setInterval(tickTimer, 1000); tickTimer(); }
+}
+
+function tickTimer(){
+  const exam = state.currentExam;
+  if(!exam || !exam.timed || state.screen !== "quiz"){ stopTimer(); return; }
+  const remaining = Math.round((exam.deadlineTs - Date.now())/1000);
+  const node = document.getElementById("quiz-timer");
+  if(node){
+    node.textContent = fmtClock(remaining);
+    node.classList.toggle("warn", remaining <= 300 && remaining > 60);
+    node.classList.toggle("danger", remaining <= 60);
+  }
+  if(remaining <= 60 && !exam.warned){
+    exam.warned = true;
+    const banner = document.getElementById("timer-banner");
+    if(banner) banner.hidden = false;
+  }
+  if(remaining <= 0){
+    stopTimer();
+    finishExam();
+  }
 }
 
 // ---------- QUIZ ----------
@@ -4146,6 +4308,19 @@ function renderQuiz(){
   const wrap = document.createElement("div");
   const q = exam.questions[exam.idx];
   const total = exam.questions.length;
+
+  if(exam.timed){
+    const remaining = Math.round((exam.deadlineTs - Date.now())/1000);
+    const timerCls = "quiz-timer" + (remaining <= 60 ? " danger" : (remaining <= 300 ? " warn" : ""));
+    const timerBar = el("div",{class:"quiz-timer-bar"},[
+      el("span",{class:"quiz-timer-label"},["Time remaining"]),
+      el("span",{class:timerCls,id:"quiz-timer"},[fmtClock(remaining)])
+    ]);
+    wrap.appendChild(timerBar);
+    const banner = el("div",{class:"timer-banner",id:"timer-banner"},["1 minute left — the exam auto-submits at 0:00."]);
+    banner.hidden = !exam.warned;
+    wrap.appendChild(banner);
+  }
 
   const track = el("div",{class:"progress-track"},[el("div",{class:"progress-fill",style:`width:${((exam.idx+1)/total*100).toFixed(1)}%`})]);
   wrap.appendChild(track);
@@ -4211,7 +4386,10 @@ function renderQuiz(){
 }
 
 async function finishExam(){
+  stopTimer();
   const exam = state.currentExam;
+  if(!exam) return;
+  state.currentExam = null; // guard against a double finish (timer expiry + manual click)
   const results = exam.questions.map((q,i)=>({
     id:q.bankId, subject:q.subject, subjectName:q.subjectName, subtopic:q.subtopic,
     difficulty:q.difficulty, type:q.type, correctAnswer: exam.answers[i]===q.correct
@@ -4227,6 +4405,12 @@ async function finishExam(){
     mode: exam.mode,
     total, correctCount, rawPct,
     questionIds: exam.questions.map(q=>q.bankId),
+    timed: !!exam.timed,
+    limitSec: exam.timed ? exam.limitSec : null,
+    elapsedSec: exam.timed ? Math.min(exam.limitSec, Math.round((Date.now()-exam.startedTs)/1000)) : null,
+    timedOut: exam.timed ? (Date.now() >= exam.deadlineTs) : false,
+    scopeBooks: exam.scopeBooks || null,
+    scopeChapters: exam.scopeChapters || null,
     results
   };
   state.attempts.push(attempt);
@@ -4248,6 +4432,15 @@ function renderResults(){
   scoreRow.appendChild(el("div",{class:"bigscore"},[`${r.correctCount}/${r.total}`]));
   scoreRow.appendChild(el("div",{class:"bigscore-label"},[`${r.rawPct}% raw score`]));
   card.appendChild(scoreRow);
+
+  if(r.timed){
+    const used = fmtClock(r.elapsedSec), allowed = fmtClock(r.limitSec);
+    card.appendChild(el("p",{class:"muted"},[
+      r.timedOut
+        ? `Timed — auto-submitted at the ${allowed} limit. Unanswered questions are scored as incorrect.`
+        : `Timed — finished in ${used} of ${allowed} allowed.`
+    ]));
+  }
 
   if(r.total >= 190){
     const passed = r.correctCount >= 152;
@@ -4333,6 +4526,8 @@ function buildFeedbackContext(r){
     parts.push(`score=${r.correctCount}/${r.total} (${r.rawPct}%)`);
     parts.push(`subjects=[${subjStr}]`);
     parts.push(`questionIds=${(r.questionIds||[]).join(" ")}`);
+    parts.push(`scope=${(r.scopeBooks||[]).join("+")||"all"} [${(r.scopeChapters||[]).join(",")}]`);
+    parts.push(`timed=${r.timed ? (fmtClock(r.elapsedSec)+"/"+fmtClock(r.limitSec)+(r.timedOut?" (timed out)":"")) : "no"}`);
     parts.push(`sessionTime=${r.timestamp}`);
   } else {
     parts.push("session=none");
@@ -4528,7 +4723,8 @@ function startRemediation(repeatedMisses){
   const finalPool = altPool.length >= 8 ? altPool : pool;
   const count = Math.min(25, finalPool.length);
   const chosen = shuffle(finalPool).slice(0,count).map(prepareInstance);
-  state.currentExam = { mode:"remediation", questions: chosen, answers:{}, idx:0, submitted:{} };
+  stopTimer();
+  state.currentExam = { mode:"remediation", questions: chosen, answers:{}, idx:0, submitted:{}, timed:false };
   state.screen = "quiz";
   render();
 }
