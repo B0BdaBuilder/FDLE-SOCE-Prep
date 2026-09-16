@@ -4554,6 +4554,15 @@ async function finishExam(){
   scrollToTop();
 }
 
+// Per-subject diagnosis note, scaled against the FDLE's 80% passing threshold
+// rather than a flat "solid, keep reinforcing" regardless of score.
+function diagnosisNote(pct){
+  if(pct >= 0.9) return "excellent — a strength you can rely on";
+  if(pct >= 0.8) return "passing, but tighten this up before exam day";
+  if(pct >= 0.7) return "below the 80% passing mark — prioritize review here";
+  return "well below passing — needs focused review before your next session";
+}
+
 // ---------- RESULTS ----------
 function renderResults(){
   const r = state.lastResult;
@@ -4627,7 +4636,7 @@ function renderResults(){
   const diagList = document.createElement("ul");
   weak.forEach(w=>{
     const li = document.createElement("li");
-    li.textContent = `${chapterLabel(w.code)}: ${Math.round(w.pct*100)}% \u2014 ${w.pct < 0.7 ? "prioritize review here before your next session" : "solid, but keep reinforcing"}`;
+    li.textContent = `${chapterLabel(w.code)}: ${Math.round(w.pct*100)}% \u2014 ${diagnosisNote(w.pct)}`;
     diagList.appendChild(li);
   });
   card.appendChild(diagList);
