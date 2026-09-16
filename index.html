@@ -4189,17 +4189,10 @@ function renderHome(){
   const wrap = document.createElement("div");
 
   const bankCard = el("div",{class:"card"});
-  bankCard.appendChild(el("h2",{},["Question Bank Status"]));
-  const total = QUESTION_BANK.length;
+  bankCard.appendChild(el("h2",{},["Question Bank"]));
   bankCard.appendChild(el("p",{class:"muted"},[
-    `${total} original, sourced practice questions currently built across 6 of 12 curriculum areas. Target for the full bank is roughly 600-700 questions across all 12 areas -- more batches are being added over time.`
+    "An extensive, growing bank of original practice questions covering all 12 FDLE Corrections SOCE curriculum areas, sourced from the current textbooks and cross-verified against Florida Statutes, Florida Administrative Code, and controlling case law -- new questions are added regularly. Log in to track your accuracy by subject and get pointed toward the areas where more practice will help you most."
   ]));
-  const pillWrap = el("div",{});
-  SUBJECT_ORDER.forEach(code=>{
-    const count = QUESTION_BANK.filter(q=>q.subject===code).length;
-    pillWrap.appendChild(el("span",{class:"pill"},[`${chapterLabel(code)}: ${count}`]));
-  });
-  bankCard.appendChild(pillWrap);
   wrap.appendChild(bankCard);
 
   const actionsCard = el("div",{class:"card"});
