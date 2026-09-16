@@ -3945,6 +3945,16 @@ const BOOKS = [
 ];
 function bookById(id){ return BOOKS.find(b=>b.id===id); }
 
+// Human-readable chapter label for a subject code, safe to show anywhere in the UI
+// (never expose the raw "CJK ####" code to the user). Distinguishes the two books
+// with an "HL" prefix, since both books have their own Chapter 2/3/4.
+function chapterLabel(code){
+  const meta = SUBJECT_META[code];
+  if(!meta) return SUBJECT_LABELS[code] || code;
+  const prefix = meta.book === "highliability" ? "HL Ch." : "Ch.";
+  return `${prefix} ${meta.ch}: ${SUBJECT_LABELS[code]}`;
+}
+
 // The real FDLE Corrections SOCE is a 200-question sitting (210 minutes under the formula below).
 const STATE_EXAM_COUNT = 200;
 
@@ -4073,8 +4083,7 @@ function renderHome(){
   const pillWrap = el("div",{});
   SUBJECT_ORDER.forEach(code=>{
     const count = QUESTION_BANK.filter(q=>q.subject===code).length;
-    const label = SUBJECT_LABELS[code];
-    pillWrap.appendChild(el("span",{class:"pill"},[`${code} ${label}: ${count}`]));
+    pillWrap.appendChild(el("span",{class:"pill"},[`${chapterLabel(code)}: ${count}`]));
   });
   bankCard.appendChild(pillWrap);
   wrap.appendChild(bankCard);
@@ -4344,7 +4353,7 @@ function renderQuiz(){
   const card = el("div",{class:"card"});
   const meta = el("div",{class:"qmeta"});
   meta.appendChild(el("span",{},[`Question ${exam.idx+1} of ${total}`]));
-  meta.appendChild(el("span",{},[`${q.subject} \u00b7 ${q.subtopic}`]));
+  meta.appendChild(el("span",{},[`${chapterLabel(q.subject)} \u00b7 ${q.subtopic}`]));
   card.appendChild(meta);
 
   card.appendChild(el("p",{class:"qstem"},[q.stem]));
@@ -4478,7 +4487,7 @@ function renderResults(){
   t1.appendChild(el("tr",{},[el("th",{},["Subject"]),el("th",{},["Score"]),el("th",{},["%"])]));
   Object.entries(bySubj).forEach(([code,d])=>{
     t1.appendChild(el("tr",{},[
-      el("td",{},[`${code} \u2014 ${d.name}`]),
+      el("td",{},[chapterLabel(code)]),
       el("td",{},[`${d.correct}/${d.total}`]),
       el("td",{},[`${Math.round(d.correct/d.total*100)}%`])
     ]));
@@ -4511,7 +4520,7 @@ function renderResults(){
   const diagList = document.createElement("ul");
   weak.forEach(w=>{
     const li = document.createElement("li");
-    li.textContent = `${w.code} (${w.name}): ${Math.round(w.pct*100)}% \u2014 ${w.pct < 0.7 ? "prioritize review here before your next session" : "solid, but keep reinforcing"}`;
+    li.textContent = `${chapterLabel(w.code)}: ${Math.round(w.pct*100)}% \u2014 ${w.pct < 0.7 ? "prioritize review here before your next session" : "solid, but keep reinforcing"}`;
     diagList.appendChild(li);
   });
   card.appendChild(diagList);
@@ -4676,7 +4685,7 @@ function renderDashboard(){
   t1.appendChild(el("tr",{},[el("th",{},["Subject"]),el("th",{},["Score"]),el("th",{},["%"])]));
   Object.entries(bySubj).sort((a,b)=>(a[1].correct/a[1].total)-(b[1].correct/b[1].total)).forEach(([code,d])=>{
     t1.appendChild(el("tr",{},[
-      el("td",{},[`${code} \u2014 ${d.name}`]),
+      el("td",{},[chapterLabel(code)]),
       el("td",{},[`${d.correct}/${d.total}`]),
       el("td",{},[`${Math.round(d.correct/d.total*100)}%`])
     ]));
@@ -4705,7 +4714,10 @@ function renderDashboard(){
   const missCounts = {};
   allResults.forEach(res=>{
     if(!res.correctAnswer){
-      const key = res.subject+" \u2014 "+res.subtopic;
+      // "|||" is an internal-only separator between the raw subject code and the
+      // subtopic -- never shown to the user and safe even if a subtopic name ever
+      // contains an em dash. Display formatting happens separately, below.
+      const key = res.subject+"|||"+res.subtopic;
       missCounts[key] = (missCounts[key]||0)+1;
     }
   });
@@ -4714,8 +4726,9 @@ function renderDashboard(){
     card.appendChild(el("p",{class:"muted"},["No concept has been missed more than once yet. Keep practicing to build a clearer picture."]));
   } else {
     repeatedMisses.forEach(([concept,count])=>{
+      const [code, subtopic] = concept.split("|||");
       card.appendChild(el("div",{class:"concept-row"},[
-        el("span",{},[concept]),
+        el("span",{},[`${chapterLabel(code)} \u2014 ${subtopic}`]),
         el("span",{class:"miss-count"},[`missed ${count}x`])
       ]));
     });
@@ -4729,7 +4742,7 @@ function renderDashboard(){
 }
 
 function startRemediation(repeatedMisses){
-  const subjects = new Set(repeatedMisses.map(([k])=>k.split(" \u2014 ")[0]));
+  const subjects = new Set(repeatedMisses.map(([k])=>k.split("|||")[0]));
   let pool = QUESTION_BANK.filter(q=>subjects.has(q.subject));
   // avoid exact previously-missed questions where alternates exist within the same subject
   const missedIds = new Set();
