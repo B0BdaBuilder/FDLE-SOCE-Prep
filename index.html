@@ -106,6 +106,9 @@
   .quiz-timer.warn{color:var(--gold-light);}
   .quiz-timer.danger{color:#F4B6AB;}
   .timer-banner{background:var(--red-bg);color:var(--red);border:1px solid var(--red);font-size:13px;font-weight:600;padding:8px 14px;margin-bottom:12px;}
+  .account-bar{display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:13px;color:var(--muted);flex-wrap:wrap;padding-top:14px;margin-bottom:14px;}
+  .auth-notice{color:var(--green);font-size:13.5px;margin:0 0 14px;}
+  .auth-error{color:var(--red);font-size:13.5px;margin:0 0 14px;}
 </style>
 </head>
 <body>
@@ -126,6 +129,7 @@
   <input type="email" name="email">
   <textarea name="context"></textarea>
 </form>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 const QUESTION_BANK =
 [
@@ -3976,39 +3980,55 @@ function prepareInstance(q){
   return Object.assign({}, q, {choices, correct, bankId:q.id});
 }
 
-// ---------- Storage (with graceful fallback when window.storage is unavailable) ----------
-const memoryFallbackStore = {};
-let usingFallbackStorage = false;
-const storage = {
-  async get(key){
-    if(window.storage && typeof window.storage.get === "function"){
-      try { return await window.storage.get(key, false); }
-      catch(e){ /* fall through to memory fallback below on error */ }
-    }
-    usingFallbackStorage = true;
-    return Object.prototype.hasOwnProperty.call(memoryFallbackStore, key) ? {key, value: memoryFallbackStore[key]} : null;
-  },
-  async set(key, value){
-    if(window.storage && typeof window.storage.set === "function"){
-      try { return await window.storage.set(key, value, false); }
-      catch(e){ /* fall through to memory fallback below on error */ }
-    }
-    usingFallbackStorage = true;
-    memoryFallbackStore[key] = value;
-    return {key, value};
-  }
-};
+// ---------- Supabase (accounts + cloud-synced progress) ----------
+const sb = window.supabase.createClient(
+  "https://wgjhkslavbbjpnlozbsi.supabase.co",
+  "sb_publishable_LC3i9PSYvwa4qSPe9flr1g_BfGdnuJz"
+);
+
+// Guests get real persistence too (localStorage), just scoped to this browser
+// instead of synced to an account across devices.
+const GUEST_KEY = "fdle_soce_guest_attempts";
+function getGuestAttempts(){
+  try { return JSON.parse(localStorage.getItem(GUEST_KEY) || "[]"); }
+  catch(e){ return []; }
+}
+function setGuestAttempts(attempts){
+  try { localStorage.setItem(GUEST_KEY, JSON.stringify(attempts)); }
+  catch(e){ /* best effort -- e.g. private browsing with storage disabled */ }
+}
 
 async function loadAttempts(){
+  if(!state.user) return getGuestAttempts();
   try{
-    const res = await storage.get("attempts");
-    return res ? JSON.parse(res.value) : [];
+    const { data, error } = await sb.from("progress")
+      .select("attempts").eq("user_id", state.user.id).maybeSingle();
+    if(error) throw error;
+    return data ? data.attempts : [];
   }catch(e){ return []; }
 }
+
+// Runs once, right after a guest signs in or creates an account, so practice
+// history recorded before authenticating isn't lost.
+async function mergeGuestIntoAccount(){
+  const guest = getGuestAttempts();
+  if(guest.length === 0) return loadAttempts();
+  const cloud = await loadAttempts();
+  const seen = new Set(cloud.map(a=>a.examId));
+  const merged = cloud.concat(guest.filter(a=>!seen.has(a.examId)))
+    .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  await saveAttempts(merged);
+  setGuestAttempts([]);
+  return merged;
+}
+
 async function saveAttempts(attempts){
+  const trimmed = attempts.slice(-40);
+  if(!state.user){ setGuestAttempts(trimmed); return; }
   try{
-    const trimmed = attempts.slice(-40);
-    await storage.set("attempts", JSON.stringify(trimmed));
+    await sb.from("progress").upsert({
+      user_id: state.user.id, attempts: trimmed, updated_at: new Date().toISOString()
+    });
   }catch(e){ /* best effort */ }
 }
 
@@ -4023,7 +4043,12 @@ const state = {
   setupSubjects: new Set(SUBJECT_ORDER),
   setupTimed: false,
   lastResult: null,
-  reviewMode: false
+  reviewMode: false,
+  user: null, // Supabase auth user, or null when browsing as a guest
+  authScreen: null, // null | 'login' | 'signup'
+  authBusy: false,
+  authError: null,
+  authNotice: null
 };
 
 // Countdown handle for timed exams (module-level so render() re-renders don't lose it).
@@ -4033,11 +4058,100 @@ function stopTimer(){ if(timerHandle){ clearInterval(timerHandle); timerHandle =
 function render(){
   const root = document.getElementById("root");
   root.innerHTML = "";
+  if(state.authScreen){ root.appendChild(renderAuthForm()); return; }
+  root.appendChild(renderAccountBar());
   if(state.screen === "home") root.appendChild(renderHome());
   else if(state.screen === "setup") root.appendChild(renderSetup());
   else if(state.screen === "quiz") root.appendChild(renderQuiz());
   else if(state.screen === "results") root.appendChild(renderResults());
   else if(state.screen === "dashboard") root.appendChild(renderDashboard());
+}
+
+// ---------- Account bar + auth ----------
+function renderAccountBar(){
+  const bar = el("div",{class:"account-bar"});
+  if(state.user){
+    bar.appendChild(el("span",{},[`Signed in as ${state.user.email}`]));
+    bar.appendChild(el("a",{class:"linklike",onclick:signOut},["Sign out"]));
+  } else {
+    bar.appendChild(el("span",{},["Browsing as guest — progress saved on this device only"]));
+    bar.appendChild(el("a",{class:"linklike",onclick:()=>{state.authScreen="login";state.authError=null;state.authNotice=null;render();}},["Log in"]));
+    bar.appendChild(el("a",{class:"linklike",onclick:()=>{state.authScreen="signup";state.authError=null;state.authNotice=null;render();}},["Sign up"]));
+  }
+  return bar;
+}
+
+function renderAuthForm(){
+  const wrap = document.createElement("div");
+  const card = el("div",{class:"card"});
+  const isSignup = state.authScreen === "signup";
+  card.appendChild(el("h2",{},[isSignup ? "Create an account" : "Log in"]));
+  card.appendChild(el("p",{class:"muted"},["Save your practice history and pick up where you left off on any device."]));
+
+  if(state.authNotice) card.appendChild(el("p",{class:"auth-notice"},[state.authNotice]));
+  if(state.authError) card.appendChild(el("p",{class:"auth-error"},[state.authError]));
+
+  card.appendChild(el("div",{class:"fb-field"},[
+    el("label",{},["Email"]),
+    el("input",{class:"fb-input",type:"email",id:"auth-email",autocomplete:"email"})
+  ]));
+  card.appendChild(el("div",{class:"fb-field"},[
+    el("label",{},["Password"]),
+    el("input",{class:"fb-input",type:"password",id:"auth-password",autocomplete: isSignup?"new-password":"current-password"})
+  ]));
+
+  const submitBtn = el("button",{class:"btn btn-gold",disabled: state.authBusy,
+    onclick:()=>submitAuth(isSignup)},[state.authBusy ? "Please wait…" : (isSignup ? "Create account" : "Log in")]);
+  card.appendChild(submitBtn);
+
+  card.appendChild(el("p",{style:"margin-top:14px;font-size:13.5px;"},[
+    isSignup ? "Already have an account? " : "Need an account? ",
+    el("a",{class:"linklike",onclick:()=>{state.authScreen = isSignup ? "login" : "signup"; state.authError=null; state.authNotice=null; render();}},[isSignup ? "Log in" : "Sign up"])
+  ]));
+
+  card.appendChild(el("div",{style:"margin-top:18px;"},[
+    el("a",{class:"linklike",onclick:()=>{state.authScreen=null;state.authError=null;state.authNotice=null;render();}},["← Continue as guest"])
+  ]));
+
+  wrap.appendChild(card);
+  return wrap;
+}
+
+async function submitAuth(isSignup){
+  const email = document.getElementById("auth-email").value.trim();
+  const password = document.getElementById("auth-password").value;
+  if(!email || !password){
+    state.authError = "Enter both an email and a password.";
+    render();
+    return;
+  }
+  state.authBusy = true;
+  state.authError = null;
+  state.authNotice = null;
+  render();
+  try{
+    const { data, error } = isSignup
+      ? await sb.auth.signUp({ email, password })
+      : await sb.auth.signInWithPassword({ email, password });
+    if(error) throw error;
+    if(isSignup && !data.session){
+      // Email confirmation is required before the account can sign in.
+      state.authBusy = false;
+      state.authScreen = "login";
+      state.authNotice = "Account created. Check your email to confirm your address, then log in below.";
+      render();
+      return;
+    }
+    // A successful sign-in fires onAuthStateChange below, which takes it from here.
+  }catch(e){
+    state.authBusy = false;
+    state.authError = e.message || "Something went wrong. Please try again.";
+    render();
+  }
+}
+
+async function signOut(){
+  await sb.auth.signOut();
 }
 
 function el(tag, opts, children){
@@ -4761,16 +4875,28 @@ function startRemediation(repeatedMisses){
 // ---------- INIT ----------
 (async function init(){
   try{
+    const { data: { session } } = await sb.auth.getSession();
+    state.user = session ? session.user : null;
     state.attempts = await loadAttempts();
     state.loadingAttempts = false;
     render();
-    if(usingFallbackStorage){
-      const root = document.getElementById("root");
-      const notice = el("div",{style:"background:#FAF3E3;border:1px solid #E3D9BE;color:#6B5B2A;font-size:12.5px;padding:8px 14px;margin-bottom:16px;"},[
-        "Running without the Claude app's saved-progress feature (this can happen when the file is opened directly in a browser). The quiz still works fully -- your session's answers just won't be remembered the next time you open this file."
-      ]);
-      root.insertBefore(notice, root.firstChild);
-    }
+
+    sb.auth.onAuthStateChange(async (event, session)=>{
+      if(event === "SIGNED_IN"){
+        const wasGuest = !state.user;
+        state.user = session.user;
+        state.authScreen = null;
+        state.authBusy = false;
+        render();
+        state.attempts = wasGuest ? await mergeGuestIntoAccount() : await loadAttempts();
+        render();
+      } else if(event === "SIGNED_OUT"){
+        state.user = null;
+        state.attempts = await loadAttempts();
+        state.screen = "home";
+        render();
+      }
+    });
   } catch(e){
     const root = document.getElementById("root");
     root.innerHTML = "";
