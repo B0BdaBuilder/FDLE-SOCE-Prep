@@ -4571,8 +4571,8 @@ function renderResults(){
   card.appendChild(el("h2",{},["Session Results"]));
 
   const scoreRow = el("div",{style:"display:flex;align-items:baseline;gap:14px;margin-bottom:6px;"});
-  scoreRow.appendChild(el("div",{class:"bigscore"},[`${r.correctCount}/${r.total}`]));
-  scoreRow.appendChild(el("div",{class:"bigscore-label"},[`${r.rawPct}% raw score`]));
+  scoreRow.appendChild(el("div",{class:"bigscore"},[`${r.rawPct}%`]));
+  scoreRow.appendChild(el("div",{class:"bigscore-label"},[`${r.correctCount}/${r.total} correct`]));
   card.appendChild(scoreRow);
 
   if(r.timed){
