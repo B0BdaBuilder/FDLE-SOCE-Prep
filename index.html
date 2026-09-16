@@ -66,6 +66,12 @@
   table.scoretab td{padding:7px 8px;border-bottom:1px solid var(--line);}
   .bigscore{font-family:var(--font-head);font-size:44px;color:var(--navy);}
   .bigscore-label{font-size:13px;color:var(--muted);}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:14px 0 18px;}
+  @media (max-width:760px){.stat-grid{grid-template-columns:1fr 1fr;}}
+  @media (max-width:420px){.stat-grid{grid-template-columns:1fr;}}
+  .stat-tile{border:1px solid var(--line);border-top:3px solid var(--gold);padding:16px 18px;background:#FCFBF8;}
+  .stat-tile .bigscore{font-size:28px;line-height:1.15;}
+  .stat-tile .bigscore-label{margin-top:2px;}
   .status-badge{display:inline-block;padding:4px 12px;font-size:13px;font-weight:600;}
   .status-pass{background:var(--green-bg);color:var(--green);}
   .status-fail{background:var(--red-bg);color:var(--red);}
@@ -4185,27 +4191,19 @@ function navigateQuestion(delta){
 }
 
 // ---------- HOME ----------
-function renderHome(){
-  const wrap = document.createElement("div");
+function enterSetup(mode){
+  state.setupMode = mode;
+  state.setupTimed = (mode === "exam");
+  if(mode === "exam") state.setupSubjects = new Set(SUBJECT_ORDER); // full-scope simulation
+  state.screen = "setup";
+  render();
+}
 
-  const bankCard = el("div",{class:"card"});
-  bankCard.appendChild(el("h2",{},["Question Bank"]));
-  bankCard.appendChild(el("p",{class:"muted"},[
-    "An extensive, growing bank of original practice questions covering all 12 FDLE Corrections SOCE curriculum areas, sourced from the current textbooks and cross-verified against Florida Statutes, Florida Administrative Code, and controlling case law -- new questions are added regularly. Log in to track your accuracy by subject and get pointed toward the areas where more practice will help you most."
-  ]));
-  wrap.appendChild(bankCard);
-
-  const actionsCard = el("div",{class:"card"});
-  actionsCard.appendChild(el("h2",{},["Practice"]));
+// The three practice-mode action tiles. Shared by renderHome() and
+// renderDashboard() so a user can start a new session from either screen
+// without duplicating this markup.
+function renderPracticeTiles(){
   const actions = el("div",{class:"home-actions"});
-
-  const enterSetup = (mode)=>{
-    state.setupMode = mode;
-    state.setupTimed = (mode === "exam");
-    if(mode === "exam") state.setupSubjects = new Set(SUBJECT_ORDER); // full-scope simulation
-    state.screen = "setup";
-    render();
-  };
 
   const examTile = el("div",{class:"action-tile",onclick:()=>enterSetup("exam")});
   examTile.appendChild(el("h3",{},["State Exam Simulation"]));
@@ -4222,7 +4220,22 @@ function renderHome(){
   fullTile.appendChild(el("p",{},["One sitting over every question in the books and chapters you select, in randomized order. Run it timed to simulate exam conditions."]));
   actions.appendChild(fullTile);
 
-  actionsCard.appendChild(actions);
+  return actions;
+}
+
+function renderHome(){
+  const wrap = document.createElement("div");
+
+  const bankCard = el("div",{class:"card"});
+  bankCard.appendChild(el("h2",{},["Question Bank"]));
+  bankCard.appendChild(el("p",{class:"muted"},[
+    "An extensive, growing bank of original practice questions covering all 12 FDLE Corrections SOCE curriculum areas, sourced from the current textbooks and cross-verified against Florida Statutes, Florida Administrative Code, and controlling case law -- new questions are added regularly. Log in to track your accuracy by subject and get pointed toward the areas where more practice will help you most."
+  ]));
+  wrap.appendChild(bankCard);
+
+  const actionsCard = el("div",{class:"card"});
+  actionsCard.appendChild(el("h2",{},["Practice"]));
+  actionsCard.appendChild(renderPracticeTiles());
   wrap.appendChild(actionsCard);
 
   const dashCard = el("div",{class:"card"});
@@ -4563,6 +4576,41 @@ function diagnosisNote(pct){
   return "well below passing — needs focused review before your next session";
 }
 
+// Per-chapter correct/total across every recorded attempt. Keyed by subject code.
+function chapterAccuracyMap(attempts){
+  const map = {};
+  attempts.flatMap(a=>a.results).forEach(res=>{
+    if(!map[res.subject]) map[res.subject] = {correct:0,total:0};
+    map[res.subject].total++;
+    if(res.correctAnswer) map[res.subject].correct++;
+  });
+  return map;
+}
+
+// How many of the 12 curriculum chapters have at least one answered question.
+function chapterCoverageCount(map){
+  return SUBJECT_ORDER.filter(code=>map[code] && map[code].total>0).length;
+}
+
+// Mean of the 12 per-chapter accuracy rates -- every chapter counts equally
+// regardless of question volume. Returns null until all 12 are covered; callers
+// must check for null and show the coverage message instead.
+function confidenceScore(map){
+  if(SUBJECT_ORDER.some(code=>!map[code] || map[code].total===0)) return null;
+  const perChapterPct = SUBJECT_ORDER.map(code=>map[code].correct/map[code].total);
+  const mean = perChapterPct.reduce((s,p)=>s+p,0) / perChapterPct.length;
+  return Math.round(mean*1000)/10;
+}
+
+// Tiered confidence message, keyed to the FDLE's 80% passing threshold.
+function confidenceTier(pct){
+  if(pct >= 95) return "Very high confidence — you're in excellent shape for exam day.";
+  if(pct >= 90) return "High confidence — strong performance, keep it sharp.";
+  if(pct >= 85) return "Good confidence — solid, but a bit more practice will help.";
+  if(pct >= 80) return "Passing range — keep practicing before exam day.";
+  return "Below passing — focused review strongly recommended.";
+}
+
 // ---------- RESULTS ----------
 function renderResults(){
   const r = state.lastResult;
@@ -4767,13 +4815,32 @@ function renderFeedbackCard(r){
 }
 
 // ---------- DASHBOARD ----------
+// One small stat card for the dashboard's top stat row. Reuses .bigscore/
+// .bigscore-label (same classes renderResults() uses) inside a bordered
+// .stat-tile so the row stays visually consistent with the rest of the flat,
+// bordered UI (no Material-style elevation/shadows).
+function statTile(label, value, sub){
+  const tile = el("div",{class:"stat-tile"});
+  tile.appendChild(el("div",{class:"bigscore"},[value]));
+  tile.appendChild(el("div",{class:"bigscore-label"},[label]));
+  if(sub) tile.appendChild(el("div",{class:"muted",style:"font-size:12px;margin-top:4px;"},[sub]));
+  return tile;
+}
+
 function renderDashboard(){
   const wrap = document.createElement("div");
   const card = el("div",{class:"card"});
   card.appendChild(el("h2",{},["Performance Dashboard"]));
 
+  const greeting = state.user
+    ? `Welcome, ${state.user.email}.`
+    : "Welcome — here's how your practice is going so far.";
+  card.appendChild(el("p",{class:"muted"},[greeting]));
+
   if(state.attempts.length===0){
     card.appendChild(el("p",{class:"empty-state"},["No sessions recorded yet."]));
+    card.appendChild(el("h3",{},["Start a New Session"]));
+    card.appendChild(renderPracticeTiles());
     wrap.appendChild(card);
     return wrap;
   }
@@ -4781,8 +4848,28 @@ function renderDashboard(){
   const allResults = state.attempts.flatMap(a=>a.results);
   const totalQ = allResults.length;
   const totalCorrect = allResults.filter(r=>r.correctAnswer).length;
-  card.appendChild(el("p",{},[`Across ${state.attempts.length} session(s) and ${totalQ} answered questions, your overall accuracy is `,
-    el("strong",{},[`${Math.round(totalCorrect/totalQ*100)}%`]),"."]));
+  const overallPct = Math.round(totalCorrect/totalQ*100);
+
+  const bySubj = chapterAccuracyMap(state.attempts);
+  const coverage = chapterCoverageCount(bySubj);
+  const confPct = confidenceScore(bySubj);
+
+  const statGrid = el("div",{class:"stat-grid"});
+  statGrid.appendChild(statTile("Overall Accuracy", `${overallPct}%`, `${totalCorrect}/${totalQ} correct`));
+  statGrid.appendChild(statTile("Sessions Completed", String(state.attempts.length), "completed sessions"));
+  statGrid.appendChild(statTile("Chapters Covered", `${coverage}/12`, coverage===12 ? "all chapters touched" : "curriculum chapters attempted"));
+  statGrid.appendChild(
+    confPct===null
+      ? statTile("Confidence Score", "Locked", `${coverage}/12 chapters attempted`)
+      : statTile("Confidence Score", `${confPct}%`, "mean of 12 chapter accuracies")
+  );
+  card.appendChild(statGrid);
+
+  card.appendChild(el("p",{class:"explain-box"},[
+    confPct===null
+      ? `${coverage}/12 chapters attempted — complete every chapter to unlock your confidence score. Try a Quick Quiz on a chapter you haven't touched yet.`
+      : confidenceTier(confPct)
+  ]));
 
   // trend: first vs most recent session
   if(state.attempts.length>=2){
@@ -4791,12 +4878,6 @@ function renderDashboard(){
   }
 
   card.appendChild(el("h3",{},["Accuracy by Subject (All Sessions)"]));
-  const bySubj = {};
-  allResults.forEach(res=>{
-    if(!bySubj[res.subject]) bySubj[res.subject] = {correct:0,total:0,name:res.subjectName};
-    bySubj[res.subject].total++;
-    if(res.correctAnswer) bySubj[res.subject].correct++;
-  });
   const t1 = el("table",{class:"scoretab"});
   t1.appendChild(el("tr",{},[el("th",{},["Subject"]),el("th",{},["Score"]),el("th",{},["%"])]));
   Object.entries(bySubj).sort((a,b)=>(a[1].correct/a[1].total)-(b[1].correct/b[1].total)).forEach(([code,d])=>{
@@ -4852,6 +4933,9 @@ function renderDashboard(){
     card.appendChild(remedBtn);
   }
 
+  card.appendChild(el("h3",{},["Start a New Session"]));
+  card.appendChild(renderPracticeTiles());
+
   card.appendChild(el("div",{style:"margin-top:20px;"},[el("a",{class:"linklike",onclick:()=>{state.screen="home";render();}},["\u2190 Back to Home"])]));
   wrap.appendChild(card);
   return wrap;
@@ -4889,6 +4973,7 @@ function startRemediation(repeatedMisses){
         state.user = session.user;
         state.authScreen = null;
         state.authBusy = false;
+        state.screen = "dashboard"; // land on the enhanced dashboard right after auth
         render();
         state.attempts = wasGuest ? await mergeGuestIntoAccount() : await loadAttempts();
         render();
