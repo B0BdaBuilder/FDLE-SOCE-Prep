@@ -4360,7 +4360,8 @@ function renderSetup(){
       + (filteredCount < STATE_EXAM_COUNT
           ? `The bank currently holds ${filteredCount}, so this run will use all ${filteredCount} (allowance scales to ${fmtClock(timeLimitSec(projected))}). `
           : `Chapters are pre-selected to the full curriculum; you can narrow the scope above if you want a partial simulation. `)
-      + `Pass/fail is reported at the 152-correct threshold once a run has 190+ questions.`
+      + `Pass/fail is reported at the 152-correct threshold once a run has 190+ questions. `
+      + `About 20-25% of the questions are scenario-based ("given this situation, which is true"), matching the real exam's mix rather than the bank's overall ratio.`
     ]));
   } else if(mode === "full"){
     card.appendChild(el("p",{class:"muted"},[
@@ -4382,23 +4383,45 @@ function renderSetup(){
   return wrap;
 }
 
+// Prefer questions not seen in the most recent 2 attempts, falling back to
+// the full pool (and flagging reuse) if there aren't enough fresh ones.
+function pickFromPool(pool, recentIds, count){
+  const fresh = pool.filter(q=>!recentIds.has(q.id));
+  const reused = fresh.length < count;
+  const source = reused ? pool : fresh;
+  return {picked: shuffle(source).slice(0, count), reused};
+}
+
+// The real SOCE runs roughly 20-25% scenario-style ("given this situation,
+// which is true") questions, well below the bank's overall mix -- draw the
+// simulation to match the real ratio instead of whatever the bank happens
+// to hold, so timed practice reflects the actual test's question shape.
+const EXAM_SCENARIO_RATIO_MIN = 0.20;
+const EXAM_SCENARIO_RATIO_MAX = 0.25;
+
 function pickExamPool(mode){
   let pool = QUESTION_BANK.filter(q=>state.setupSubjects.has(q.subject));
-  // exclude questions seen in the most recent 2 attempts, if enough remain
   const recentIds = new Set();
   state.attempts.slice(-2).forEach(a=>{ (a.questionIds||[]).forEach(id=>recentIds.add(id)); });
   const target = projectedQuestionCount(mode, pool.length);
-  const fresh = pool.filter(q=>!recentIds.has(q.id));
-  let finalPool;
-  let reused = false;
-  if(fresh.length >= target){
-    finalPool = fresh;
-  } else {
-    finalPool = pool;
-    reused = true;
+
+  if(mode === "exam"){
+    const scenarioPool = pool.filter(q=>q.type==="scenario");
+    const recallPool = pool.filter(q=>q.type!=="scenario");
+    const ratio = EXAM_SCENARIO_RATIO_MIN + Math.random()*(EXAM_SCENARIO_RATIO_MAX - EXAM_SCENARIO_RATIO_MIN);
+    let scenarioTarget = Math.min(Math.round(target * ratio), scenarioPool.length);
+    let recallTarget = target - scenarioTarget;
+    if(recallTarget > recallPool.length){
+      recallTarget = recallPool.length;
+      scenarioTarget = Math.min(target - recallTarget, scenarioPool.length);
+    }
+    const scenarioPick = pickFromPool(scenarioPool, recentIds, scenarioTarget);
+    const recallPick = pickFromPool(recallPool, recentIds, recallTarget);
+    return {chosen: [...scenarioPick.picked, ...recallPick.picked], reused: scenarioPick.reused || recallPick.reused};
   }
-  const chosen = shuffle(finalPool).slice(0, target);
-  return {chosen, reused};
+
+  const {picked, reused} = pickFromPool(pool, recentIds, target);
+  return {chosen: picked, reused};
 }
 
 function startExam(mode){
