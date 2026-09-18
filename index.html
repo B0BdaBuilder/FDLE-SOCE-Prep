@@ -115,6 +115,94 @@
   .account-bar{display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:13px;color:var(--muted);flex-wrap:wrap;padding-top:14px;margin-bottom:14px;}
   .auth-notice{color:var(--green);font-size:13.5px;margin:0 0 14px;}
   .auth-error{color:var(--red);font-size:13.5px;margin:0 0 14px;}
+
+  /* ----- Name prompt modal ----- */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(13,24,38,0.6);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100;}
+  .modal{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);padding:28px;width:100%;max-width:420px;}
+  .modal h2{font-family:var(--font-head);font-size:20px;color:var(--navy);margin:0 0 8px;}
+  .modal-actions{display:flex;align-items:center;gap:16px;margin-top:6px;}
+
+  /* ----- Admin dashboard (sidebar + cards layout) ----- */
+  .admin-mode .topbar,.admin-mode .disclaimer-strip{display:none;}
+  .admin-mode #root{max-width:none;padding:0;}
+  .adm{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh;}
+  .adm-side{background:var(--navy);color:#EDE7D8;border-right:3px solid var(--gold);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;}
+  .adm-brand{padding:22px 20px 18px;font-family:var(--font-head);font-size:18px;line-height:1.25;border-bottom:1px solid rgba(255,255,255,0.1);}
+  .adm-brand small{display:block;font-family:var(--font-body);font-size:11.5px;color:#B8C4D6;margin-top:4px;letter-spacing:0.3px;text-transform:uppercase;}
+  .adm-nav{padding:14px 0;display:flex;flex-direction:column;}
+  .adm-nav-label{padding:14px 20px 6px;font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:#8497B0;}
+  .adm-nav a{display:flex;align-items:center;gap:12px;padding:11px 20px;color:#B8C4D6;cursor:pointer;border-left:3px solid transparent;font-size:14.5px;text-decoration:none;}
+  .adm-nav a:hover{color:#fff;background:rgba(255,255,255,0.05);}
+  .adm-nav a.active{color:#fff;background:var(--navy-light);border-left-color:var(--gold);}
+  .adm-nav svg,.adm-stat-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+  .adm-main{min-width:0;background:var(--cream);}
+  .adm-header{background:#fff;border-bottom:1px solid var(--line);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+  .adm-header h1{font-family:var(--font-head);font-size:22px;color:var(--navy);margin:0;font-weight:normal;}
+  .adm-header .muted{margin:2px 0 0;}
+  .adm-user{display:flex;align-items:center;gap:12px;}
+  .adm-avatar{width:36px;height:36px;border-radius:50%;background:var(--navy);color:var(--gold-light);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:16px;flex-shrink:0;}
+  .adm-avatar.sm{width:30px;height:30px;font-size:13px;background:#EEF2F6;color:var(--navy);}
+  .adm-content{padding:24px 28px 50px;}
+  .adm-grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px;}
+  .adm-row{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:20px;}
+  .adm-stat{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);padding:18px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .adm-stat-value{font-family:var(--font-head);font-size:30px;color:var(--navy);line-height:1.1;}
+  .adm-stat-label{font-size:13px;color:var(--muted);margin-top:4px;}
+  .adm-stat-sub{font-size:12px;color:var(--muted);margin-top:6px;}
+  .adm-stat-icon{width:38px;height:38px;background:#F4EBD3;color:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .adm .card h3:first-child{margin-top:0;}
+  .adm .card{padding:22px 24px;}
+  .adm-toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px;}
+  .adm-toolbar input{max-width:320px;}
+  .adm-table-wrap{overflow-x:auto;}
+  table.adm-table{width:100%;border-collapse:collapse;font-size:14px;}
+  table.adm-table th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);border-bottom:1px solid var(--line);padding:8px 10px;white-space:nowrap;font-weight:600;}
+  table.adm-table th.sortable{cursor:pointer;user-select:none;}
+  table.adm-table th.sortable:hover{color:var(--navy);}
+  table.adm-table td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  table.adm-table.nw td,table.adm-table td.nw{white-space:nowrap;}
+  table.adm-table tr.clickable{cursor:pointer;}
+  table.adm-table tr.clickable:hover td{background:#FAF8F2;}
+  .adm-person{display:flex;align-items:center;gap:10px;}
+  .adm-person-name{font-weight:600;color:var(--navy);}
+  .adm-person-email{font-size:12.5px;color:var(--muted);}
+  .adm-badge{display:inline-block;font-size:11px;padding:1px 8px;background:#F4EBD3;color:var(--gold);font-weight:600;margin-left:6px;letter-spacing:0.3px;text-transform:uppercase;}
+  .delta-up{color:var(--green);font-weight:600;}
+  .delta-down{color:var(--red);font-weight:600;}
+  .delta-flat{color:var(--muted);}
+  .adm-chart{width:100%;height:auto;display:block;overflow:visible;}
+  .adm-chart text{font-family:var(--font-body);font-size:11px;fill:var(--muted);}
+  .adm-chart .val{fill:var(--ink);font-weight:600;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round;}
+  .adm-chart .hit{fill:transparent;cursor:pointer;outline:none;}
+  .adm-chart .hit:hover + .pt,.adm-chart .hit:focus + .pt{stroke-width:3;}
+  .hbar-row{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) 44px;gap:10px;align-items:center;padding:5px 0;}
+  .hbar-label{font-size:12.5px;line-height:1.3;color:var(--ink);}
+  .hbar-track{position:relative;height:14px;background:#EFEBDD;}
+  .hbar-fill{position:absolute;left:0;top:0;bottom:0;background:var(--navy);border-radius:0 4px 4px 0;}
+  .hbar-ref{position:absolute;top:-3px;bottom:-3px;width:0;border-left:1.5px dashed var(--gold);}
+  .hbar-val{font-size:13px;font-weight:600;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums;}
+  .hbar-legend{font-size:12px;color:var(--muted);margin-top:8px;}
+  .vbar-wrap{display:flex;align-items:flex-end;gap:6px;height:210px;padding-top:18px;}
+  .vbar-col{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;}
+  .vbar-fill{width:100%;max-width:26px;background:var(--navy);border-radius:4px 4px 0 0;min-height:0;}
+  .vbar-count{font-size:11px;font-weight:600;color:var(--ink);}
+  .vbar-x{display:flex;gap:6px;margin-top:6px;}
+  .vbar-x span{flex:1;min-width:0;text-align:center;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;}
+  .adm-tip{position:fixed;display:none;z-index:200;background:var(--navy-deep);color:#EDE7D8;padding:8px 11px;font-size:12.5px;line-height:1.4;pointer-events:none;max-width:240px;border-left:3px solid var(--gold);}
+  .adm-tip-h{font-weight:700;color:#fff;}
+  .adm-back{margin-bottom:14px;display:inline-block;}
+  @media (max-width:1100px){.adm-grid-4{grid-template-columns:repeat(2,minmax(0,1fr));}.adm-row{grid-template-columns:1fr;}}
+  @media (max-width:860px){
+    .adm{grid-template-columns:minmax(0,1fr);}
+    .adm-side{position:static;height:auto;border-right:none;border-bottom:3px solid var(--gold);}
+    .adm-nav{flex-direction:row;overflow-x:auto;padding:0;}
+    .adm-nav-label{display:none;}
+    .adm-nav a{border-left:none;border-bottom:3px solid transparent;white-space:nowrap;}
+    .adm-nav a.active{border-bottom-color:var(--gold);}
+    .adm-header,.adm-content{padding-left:16px;padding-right:16px;}
+    .hbar-row{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 44px;}
+  }
+  @media (max-width:520px){.adm-grid-4{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -4054,8 +4142,69 @@ const state = {
   authScreen: null, // null | 'login' | 'signup'
   authBusy: false,
   authError: null,
-  authNotice: null
+  authNotice: null,
+  profile: null, // {name, email, is_admin} row from public.profiles for the signed-in user
+  nameDraft: "",
+  nameBusy: false,
+  nameError: null,
+  nameSkipped: false, // "Ask me later" -- suppresses the name prompt for this page load only
+  admin: null // admin dashboard state; created lazily by adminState()
 };
+
+// ---------- Profile (name + admin flag) ----------
+async function loadProfile(){
+  if(!state.user) return null;
+  try{
+    const { data, error } = await sb.from("profiles")
+      .select("name,email,is_admin").eq("user_id", state.user.id).maybeSingle();
+    if(error) throw error;
+    return data;
+  }catch(e){ return null; }
+}
+function displayName(){ return state.profile && state.profile.name ? state.profile.name : null; }
+// The UI gate only; the real enforcement is the RLS policies on profiles/progress.
+function isAdmin(){ return !!(state.profile && state.profile.is_admin); }
+
+async function saveName(){
+  const name = state.nameDraft.trim();
+  if(!name){ state.nameError = "Please enter your name."; render(); return; }
+  if(name.length > 60){ state.nameError = "Names can be up to 60 characters."; render(); return; }
+  state.nameBusy = true;
+  state.nameError = null;
+  render();
+  try{
+    const { data, error } = await sb.from("profiles")
+      .update({ name }).eq("user_id", state.user.id).select("name").maybeSingle();
+    if(error) throw error;
+    if(!data) throw new Error("Your profile could not be found. Please reload and try again.");
+    state.profile = Object.assign({}, state.profile, { name: data.name });
+  }catch(e){
+    state.nameError = e.message || "Couldn't save your name. Please try again.";
+  }
+  state.nameBusy = false;
+  render();
+}
+
+// Shown once after login for any account with no saved name.
+function renderNameModal(){
+  const backdrop = el("div",{class:"modal-backdrop"});
+  const modal = el("div",{class:"modal",role:"dialog","aria-modal":"true","aria-labelledby":"name-modal-title"});
+  modal.appendChild(el("h2",{id:"name-modal-title"},["Welcome! What should we call you?"]));
+  modal.appendChild(el("p",{class:"muted"},["We'll use your name to greet you each time you sign in."]));
+  if(state.nameError) modal.appendChild(el("p",{class:"auth-error"},[state.nameError]));
+  const input = el("input",{class:"fb-input",type:"text",id:"name-input",maxlength:"60",autocomplete:"given-name",placeholder:"Your first name"});
+  input.value = state.nameDraft;
+  input.addEventListener("input",()=>{ state.nameDraft = input.value; });
+  input.addEventListener("keydown",e=>{ if(e.key==="Enter" && !state.nameBusy) saveName(); });
+  modal.appendChild(el("div",{class:"fb-field"},[input]));
+  modal.appendChild(el("div",{class:"modal-actions"},[
+    el("button",{class:"btn btn-gold",disabled:state.nameBusy,onclick:saveName},[state.nameBusy ? "Saving…" : "Save"]),
+    el("a",{class:"linklike",onclick:()=>{ state.nameSkipped = true; render(); }},["Ask me later"])
+  ]));
+  backdrop.appendChild(modal);
+  setTimeout(()=>input.focus(),0);
+  return backdrop;
+}
 
 // Countdown handle for timed exams (module-level so render() re-renders don't lose it).
 let timerHandle = null;
@@ -4064,8 +4213,21 @@ function stopTimer(){ if(timerHandle){ clearInterval(timerHandle); timerHandle =
 function render(){
   const root = document.getElementById("root");
   root.innerHTML = "";
+  hideTip();
+  if(state.screen === "admin" && !isAdmin()) state.screen = "home";
+  const adminView = !state.authScreen && state.screen === "admin";
+  document.body.classList.toggle("admin-mode", adminView);
   if(state.authScreen){ root.appendChild(renderAuthForm()); return; }
-  root.appendChild(renderAccountBar());
+  if(adminView){
+    root.appendChild(renderAdmin());
+  } else {
+    root.appendChild(renderAccountBar());
+    renderMain(root);
+  }
+  if(state.user && state.profile && !state.profile.name && !state.nameSkipped) root.appendChild(renderNameModal());
+}
+
+function renderMain(root){
   if(state.screen === "home") root.appendChild(renderHome());
   else if(state.screen === "setup") root.appendChild(renderSetup());
   else if(state.screen === "quiz") root.appendChild(renderQuiz());
@@ -4077,7 +4239,8 @@ function render(){
 function renderAccountBar(){
   const bar = el("div",{class:"account-bar"});
   if(state.user){
-    bar.appendChild(el("span",{},[`Signed in as ${state.user.email}`]));
+    bar.appendChild(el("span",{title:state.user.email},[displayName() ? `Hi, ${displayName()}` : `Signed in as ${state.user.email}`]));
+    if(isAdmin()) bar.appendChild(el("a",{class:"linklike",onclick:()=>{state.screen="admin";render();scrollToTop();}},["Admin dashboard"]));
     bar.appendChild(el("a",{class:"linklike",onclick:signOut},["Sign out"]));
   } else {
     bar.appendChild(el("span",{},["Browsing as guest — progress saved on this device only"]));
@@ -4856,7 +5019,7 @@ function renderDashboard(){
   card.appendChild(el("h2",{},["Performance Dashboard"]));
 
   const greeting = state.user
-    ? `Welcome, ${state.user.email}.`
+    ? `Welcome back, ${displayName() || state.user.email}.`
     : "Welcome — here's how your practice is going so far.";
   card.appendChild(el("p",{class:"muted"},[greeting]));
 
@@ -4981,27 +5144,519 @@ function startRemediation(repeatedMisses){
   scrollToTop();
 }
 
+// ---------- ADMIN DASHBOARD ----------
+// Read-only view over every user's profile + progress. Access is enforced by RLS
+// ("Admins can view all ..." policies keyed on profiles.is_admin); isAdmin() only
+// decides whether to show the UI.
+const SVGNS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs, children){
+  const n = document.createElementNS(SVGNS, tag);
+  Object.entries(attrs||{}).forEach(([k,v])=>n.setAttribute(k,v));
+  (children||[]).forEach(c=>n.appendChild(typeof c==="string" ? document.createTextNode(c) : c));
+  return n;
+}
+const ICONS = {
+  grid: ["M3 3h7v7H3z","M14 3h7v7h-7z","M14 14h7v7h-7z","M3 14h7v7H3z"],
+  users: ["M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2","M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z","M23 21v-2a4 4 0 0 0-3-3.87","M16 3.13a4 4 0 0 1 0 7.75"],
+  activity: ["M22 12h-4l-3 9L9 3l-3 9H2"],
+  check: ["M9 11l3 3L22 4","M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"],
+  trend: ["M23 6l-9.5 9.5-5-5L1 18","M17 6h6v6"],
+  book: ["M4 19.5A2.5 2.5 0 0 1 6.5 17H20","M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"],
+  logout: ["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4","M16 17l5-5-5-5","M21 12H9"],
+  refresh: ["M23 4v6h-6","M1 20v-6h6","M3.51 9a9 9 0 0 1 14.85-3.36L23 10","M1 14l4.64 4.36A9 9 0 0 0 20.49 15"]
+};
+function icon(name){
+  return svgEl("svg",{viewBox:"0 0 24 24","aria-hidden":"true"}, ICONS[name].map(d=>svgEl("path",{d})));
+}
+
+// One shared hover tooltip, attached to the body so chart overflow can't clip it.
+let tipEl = null;
+function hideTip(){ if(tipEl) tipEl.style.display = "none"; }
+function attachTip(node, lines){
+  const show = (x,y)=>{
+    if(!tipEl){ tipEl = el("div",{class:"adm-tip",role:"tooltip"}); document.body.appendChild(tipEl); }
+    tipEl.innerHTML = "";
+    lines.forEach((l,i)=>tipEl.appendChild(el("div",{class:i===0?"adm-tip-h":""},[l])));
+    tipEl.style.display = "block";
+    tipEl.style.left = Math.max(8, Math.min(x+14, window.innerWidth-tipEl.offsetWidth-8)) + "px";
+    tipEl.style.top = Math.max(8, Math.min(y+14, window.innerHeight-tipEl.offsetHeight-8)) + "px";
+  };
+  node.addEventListener("mousemove",e=>show(e.clientX,e.clientY));
+  node.addEventListener("mouseleave",hideTip);
+  node.addEventListener("focus",()=>{ const r = node.getBoundingClientRect(); show(r.left+r.width/2, r.top); });
+  node.addEventListener("blur",hideTip);
+}
+
+const MODE_LABELS = { quick:"Quick Quiz", full:"Full Practice Exam", exam:"State Exam Simulation", remediation:"Remediation Quiz" };
+function modeLabel(m){ return MODE_LABELS[m] || "Practice"; }
+function fmtDate(iso){
+  const d = new Date(iso);
+  return isNaN(d) ? "—" : d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+}
+function fmtAgo(iso){
+  if(!iso) return "Never";
+  const s = (Date.now() - new Date(iso).getTime())/1000;
+  if(s < 60) return "Just now";
+  if(s < 3600) return Math.round(s/60) + "m ago";
+  if(s < 86400) return Math.round(s/3600) + "h ago";
+  if(s < 86400*30) return Math.round(s/86400) + "d ago";
+  return fmtDate(iso);
+}
+function fmtPct(v){ return v===null || v===undefined ? "—" : (Math.round(v*10)/10) + "%"; }
+function deltaNode(d){
+  if(d===null) return el("span",{class:"delta-flat"},["—"]);
+  const abs = Math.abs(d).toFixed(1);
+  if(d > 0) return el("span",{class:"delta-up"},[`▲ +${abs} pts`]);
+  if(d < 0) return el("span",{class:"delta-down"},[`▼ −${abs} pts`]);
+  return el("span",{class:"delta-flat"},["● 0.0 pts"]);
+}
+function initial(u){ return ((u.name || u.email || "?").trim().charAt(0) || "?").toUpperCase(); }
+
+function adminState(){
+  if(!state.admin) state.admin = { view:"overview", selected:null, users:null, loading:false, error:null, search:"", sortKey:"last", sortDir:"desc" };
+  return state.admin;
+}
+
+// Per-user numbers for the admin views. "Improvement" compares the mean score of a
+// user's earliest sessions with their latest (up to 3 each, never overlapping), so one
+// lucky or unlucky session doesn't swing it. Needs at least 2 sessions. Note the app
+// keeps only each user's most recent 40 sessions (see saveAttempts).
+function buildUserStats(profile, progress){
+  const attempts = ((progress && progress.attempts) || []).slice()
+    .sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  const results = attempts.flatMap(a=>a.results || []);
+  const correct = results.filter(r=>r.correctAnswer).length;
+  const bySubj = chapterAccuracyMap(attempts);
+  const n = attempts.length;
+  let improvement = null;
+  if(n >= 2){
+    const k = Math.min(3, Math.floor(n/2));
+    const mean = arr=>arr.reduce((s,a)=>s+a.rawPct,0)/arr.length;
+    improvement = Math.round((mean(attempts.slice(-k)) - mean(attempts.slice(0,k)))*10)/10;
+  }
+  return {
+    id: profile.user_id, name: profile.name, email: profile.email, isAdmin: !!profile.is_admin,
+    joined: profile.created_at, attempts, sessions: n, totalQ: results.length, correctQ: correct,
+    accuracy: results.length ? Math.round(correct/results.length*1000)/10 : null,
+    latest: n ? attempts[n-1].rawPct : null,
+    improvement, bySubj,
+    coverage: chapterCoverageCount(bySubj), confidence: confidenceScore(bySubj),
+    lastActive: n ? attempts[n-1].timestamp : null
+  };
+}
+
+async function loadAdminData(){
+  const a = adminState();
+  a.loading = true; a.error = null; // callers are mid-render(), which already shows the loading state
+  try{
+    const [p, g] = await Promise.all([
+      sb.from("profiles").select("user_id,email,name,is_admin,created_at"),
+      sb.from("progress").select("user_id,attempts,updated_at")
+    ]);
+    if(p.error) throw p.error;
+    if(g.error) throw g.error;
+    const progressBy = new Map(g.data.map(r=>[r.user_id, r]));
+    a.users = p.data.map(pr=>buildUserStats(pr, progressBy.get(pr.user_id)));
+    a.loadedAt = new Date();
+  }catch(e){
+    a.error = e.message || "Couldn't load dashboard data.";
+  }
+  a.loading = false;
+  render();
+}
+
+// ----- chart primitives -----
+// Line chart: one series, x = point index, y = percent. Dashed gold line marks the 80% pass mark.
+function lineChart(points, ariaLabel){
+  const W = 640, H = 240, L = 40, R = 18, T = 20, B = 30;
+  const svg = svgEl("svg",{viewBox:`0 0 ${W} ${H}`,class:"adm-chart",role:"img","aria-label":ariaLabel});
+  const minY = Math.min(...points.map(p=>p.y), 80);
+  const lo = Math.max(0, Math.min(60, Math.floor((minY-5)/10)*10)), hi = 100;
+  const yPos = v=>T + (hi-v)/(hi-lo)*(H-T-B);
+  const PAD = 26; // keep the first/last points (and their labels) off the axis
+  const xPos = i=>points.length===1 ? (L+W-R)/2 : L + PAD + i*(W-L-R-2*PAD)/(points.length-1);
+  for(let v=lo; v<=hi; v+=(hi-lo>50?20:10)){
+    svg.appendChild(svgEl("line",{x1:L,x2:W-R,y1:yPos(v),y2:yPos(v),stroke:"#E9E5D8","stroke-width":1}));
+    svg.appendChild(svgEl("text",{x:L-8,y:yPos(v)+4,"text-anchor":"end"},[v+"%"]));
+  }
+  svg.appendChild(svgEl("line",{x1:L,x2:W-R,y1:yPos(80),y2:yPos(80),stroke:"#A9822F","stroke-width":1.5,"stroke-dasharray":"5 4"}));
+  svg.appendChild(svgEl("text",{x:W-R,y:yPos(80)-5,"text-anchor":"end",style:"fill:#A9822F;font-weight:600"},["80% pass"]));
+  const labelAll = points.length <= 8, maxV = Math.max(...points.map(p=>p.y)), minV = Math.min(...points.map(p=>p.y));
+  const step = Math.ceil(points.length/12);
+  points.forEach((p,i)=>{ if(i%step===0) svg.appendChild(svgEl("text",{x:xPos(i),y:H-8,"text-anchor":"middle"},[p.label])); });
+  if(points.length > 1){
+    svg.appendChild(svgEl("polyline",{points:points.map((p,i)=>`${xPos(i)},${yPos(p.y)}`).join(" "),fill:"none",stroke:"#16263D","stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"}));
+  }
+  points.forEach((p,i)=>{
+    const g = svgEl("g");
+    const hit = svgEl("circle",{cx:xPos(i),cy:yPos(p.y),r:14,class:"hit",tabindex:"0"});
+    attachTip(hit, p.tip);
+    g.appendChild(hit);
+    g.appendChild(svgEl("circle",{cx:xPos(i),cy:yPos(p.y),r:4.5,fill:"#16263D",stroke:"#fff","stroke-width":2,class:"pt","pointer-events":"none"}));
+    if(labelAll || i===0 || i===points.length-1 || p.y===maxV || p.y===minV)
+      g.appendChild(svgEl("text",{x:xPos(i),y:yPos(p.y)-11,"text-anchor":"middle",class:"val"},[fmtPct(p.y)]));
+    svg.appendChild(g);
+  });
+  return svg;
+}
+
+// Horizontal bars, one row per chapter, with the 80% pass mark drawn across each track.
+function chapterBars(bySubj){
+  const wrap = el("div");
+  const rows = SUBJECT_ORDER.map(code=>{
+    const d = bySubj[code];
+    return { code, d, pct: d && d.total ? d.correct/d.total*100 : null };
+  }).sort((a,b)=>(a.pct===null)-(b.pct===null) || (a.pct-b.pct));
+  rows.forEach(r=>{
+    const row = el("div",{class:"hbar-row",tabindex:"0"});
+    row.appendChild(el("div",{class:"hbar-label",title:chapterLabel(r.code)},[chapterLabel(r.code)]));
+    const track = el("div",{class:"hbar-track"});
+    if(r.pct!==null) track.appendChild(el("div",{class:"hbar-fill",style:`width:${r.pct}%`}));
+    track.appendChild(el("div",{class:"hbar-ref",style:"left:80%"}));
+    row.appendChild(track);
+    row.appendChild(el("div",{class:"hbar-val"},[r.pct===null ? "—" : Math.round(r.pct)+"%"]));
+    attachTip(row, [chapterLabel(r.code), r.pct===null ? "No questions answered yet" : `${r.d.correct}/${r.d.total} correct (${fmtPct(r.pct)})`]);
+    wrap.appendChild(row);
+  });
+  wrap.appendChild(el("div",{class:"hbar-legend"},["Dashed line = 80% pass mark. Lowest chapters first."]));
+  return wrap;
+}
+
+function adminStat(iconName, value, label, sub){
+  return el("div",{class:"adm-stat"},[
+    el("div",{},[
+      el("div",{class:"adm-stat-value"},[value]),
+      el("div",{class:"adm-stat-label"},[label]),
+      sub ? el("div",{class:"adm-stat-sub"},[sub]) : null
+    ]),
+    el("div",{class:"adm-stat-icon"},[icon(iconName)])
+  ]);
+}
+
+// ----- views -----
+function renderAdminOverview(users){
+  const frag = document.createElement("div");
+  const DAY = 86400000, now = Date.now();
+  const allSessions = users.flatMap(u=>u.attempts.map(a=>({u, a})));
+  const active7 = users.filter(u=>u.lastActive && now - new Date(u.lastActive) < 7*DAY).length;
+  const sessions7 = allSessions.filter(s=>now - new Date(s.a.timestamp) < 7*DAY).length;
+  const totalQ = users.reduce((s,u)=>s+u.totalQ,0), totalC = users.reduce((s,u)=>s+u.correctQ,0);
+  const classAcc = totalQ ? totalC/totalQ*100 : null;
+  const deltas = users.filter(u=>u.improvement!==null).map(u=>u.improvement);
+  const avgDelta = deltas.length ? deltas.reduce((s,d)=>s+d,0)/deltas.length : null;
+  const practiced = users.filter(u=>u.sessions>0).length;
+
+  const stats = el("div",{class:"adm-grid-4"});
+  stats.appendChild(adminStat("users", String(users.length), "Registered users", `${practiced} have completed a session`));
+  stats.appendChild(adminStat("activity", String(active7), "Active in last 7 days", `of ${users.length} registered`));
+  stats.appendChild(adminStat("check", String(allSessions.length), "Sessions completed", `${sessions7} in the last 7 days`));
+  stats.appendChild(adminStat("trend", fmtPct(classAcc), "Overall accuracy",
+    avgDelta===null ? "Improvement shows after 2+ sessions" : `Avg. improvement ${avgDelta>=0?"+":"−"}${Math.abs(avgDelta).toFixed(1)} pts`));
+  frag.appendChild(stats);
+
+  // Row 1: average score by session number + sessions per day
+  const row1 = el("div",{class:"adm-row"});
+  const trendCard = el("div",{class:"card"});
+  trendCard.appendChild(el("h3",{},["Average score by session number"]));
+  trendCard.appendChild(el("p",{class:"muted",style:"margin:-4px 0 8px;"},["Are students improving as they take more sessions? Each point averages everyone's Nth session."]));
+  const pts = [];
+  for(let i=0; i<10; i++){
+    const vals = users.filter(u=>u.attempts[i]).map(u=>u.attempts[i].rawPct);
+    if(!vals.length) break;
+    const avg = vals.reduce((s,v)=>s+v,0)/vals.length;
+    pts.push({ label:"#"+(i+1), y:Math.round(avg*10)/10, tip:[`Session ${i+1}`, `Average ${fmtPct(avg)}`, `${vals.length} ${vals.length===1?"student":"students"}`] });
+  }
+  trendCard.appendChild(pts.length ? lineChart(pts,"Average score by session number") : el("p",{class:"empty-state"},["No sessions recorded yet."]));
+  row1.appendChild(trendCard);
+
+  const dayCard = el("div",{class:"card"});
+  dayCard.appendChild(el("h3",{},["Sessions per day — last 14 days"]));
+  const days = [];
+  for(let i=13; i>=0; i--){ const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i); days.push({ d, n:0 }); }
+  allSessions.forEach(s=>{
+    const t = new Date(s.a.timestamp); t.setHours(0,0,0,0);
+    const slot = days.find(x=>x.d.getTime()===t.getTime());
+    if(slot) slot.n++;
+  });
+  const maxN = Math.max(1, ...days.map(x=>x.n));
+  const bars = el("div",{class:"vbar-wrap"});
+  const xlab = el("div",{class:"vbar-x"});
+  days.forEach((x,i)=>{
+    const col = el("div",{class:"vbar-col",tabindex:"0"});
+    if(x.n) col.appendChild(el("div",{class:"vbar-count"},[String(x.n)]));
+    col.appendChild(el("div",{class:"vbar-fill",style:`height:${x.n/maxN*100}%`}));
+    attachTip(col,[x.d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}), `${x.n} ${x.n===1?"session":"sessions"}`]);
+    bars.appendChild(col);
+    xlab.appendChild(el("span",{},[i%2===1 ? "" : String(x.d.getMonth()+1)+"/"+x.d.getDate()]));
+  });
+  dayCard.appendChild(bars);
+  dayCard.appendChild(xlab);
+  row1.appendChild(dayCard);
+  frag.appendChild(row1);
+
+  // Row 2: class accuracy by chapter + recent activity
+  const row2 = el("div",{class:"adm-row",style:"margin-top:20px;"});
+  const chCard = el("div",{class:"card"});
+  chCard.appendChild(el("h3",{},["Class accuracy by chapter"]));
+  const classBySubj = {};
+  users.forEach(u=>Object.entries(u.bySubj).forEach(([code,d])=>{
+    const c = classBySubj[code] || (classBySubj[code] = {correct:0,total:0});
+    c.correct += d.correct; c.total += d.total;
+  }));
+  chCard.appendChild(chapterBars(classBySubj));
+  row2.appendChild(chCard);
+
+  const recentCard = el("div",{class:"card"});
+  recentCard.appendChild(el("h3",{},["Recent activity"]));
+  const recent = allSessions.sort((x,y)=>new Date(y.a.timestamp)-new Date(x.a.timestamp)).slice(0,8);
+  if(!recent.length){
+    recentCard.appendChild(el("p",{class:"empty-state"},["No sessions yet."]));
+  } else {
+    const wrap = el("div",{class:"adm-table-wrap"});
+    const t = el("table",{class:"adm-table"});
+    t.appendChild(el("thead",{},[el("tr",{},[el("th",{},["Student"]),el("th",{},["Session"]),el("th",{},["Score"]),el("th",{},["When"])])]));
+    const tb = el("tbody");
+    recent.forEach(({u,a})=>{
+      const tr = el("tr",{class:"clickable",onclick:()=>{ const s = adminState(); s.view="users"; s.selected=u.id; render(); scrollToTop(); }},[
+        el("td",{},[u.name || u.email || "Unknown"]),
+        el("td",{},[modeLabel(a.mode)]),
+        el("td",{class:"nw"},[fmtPct(a.rawPct)]),
+        el("td",{class:"nw"},[fmtAgo(a.timestamp)])
+      ]);
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+    wrap.appendChild(t);
+    recentCard.appendChild(wrap);
+  }
+  row2.appendChild(recentCard);
+  frag.appendChild(row2);
+  return frag;
+}
+
+const USER_COLUMNS = [
+  { key:"name", label:"Student", get:u=>(u.name||u.email||"").toLowerCase() },
+  { key:"sessions", label:"Sessions", get:u=>u.sessions },
+  { key:"acc", label:"Accuracy", get:u=>u.accuracy },
+  { key:"latest", label:"Latest", get:u=>u.latest },
+  { key:"improve", label:"Improvement", get:u=>u.improvement },
+  { key:"conf", label:"Confidence", get:u=>u.confidence },
+  { key:"last", label:"Last active", get:u=>u.lastActive ? new Date(u.lastActive).getTime() : null }
+];
+
+function renderAdminUsers(users){
+  const a = adminState();
+  const frag = document.createElement("div");
+  const card = el("div",{class:"card"});
+
+  const search = el("input",{class:"fb-input",type:"search",placeholder:"Search by name or email",value:a.search,"aria-label":"Search students"});
+  const count = el("span",{class:"muted"});
+  card.appendChild(el("div",{class:"adm-toolbar"},[search,count]));
+
+  const wrap = el("div",{class:"adm-table-wrap"});
+  const table = el("table",{class:"adm-table nw"});
+  const headRow = el("tr");
+  USER_COLUMNS.forEach(c=>{
+    const active = a.sortKey===c.key;
+    headRow.appendChild(el("th",{class:"sortable","aria-sort":active?(a.sortDir==="asc"?"ascending":"descending"):"none",
+      onclick:()=>{ if(active) a.sortDir = a.sortDir==="asc" ? "desc" : "asc"; else { a.sortKey=c.key; a.sortDir = c.key==="name" ? "asc" : "desc"; } render(); }},
+      [c.label + (active ? (a.sortDir==="asc" ? " ▴" : " ▾") : "")]));
+  });
+  table.appendChild(el("thead",{},[headRow]));
+  const tbody = el("tbody");
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  card.appendChild(wrap);
+
+  const fill = ()=>{
+    tbody.innerHTML = "";
+    const q = a.search.trim().toLowerCase();
+    const col = USER_COLUMNS.find(c=>c.key===a.sortKey);
+    const dir = a.sortDir==="asc" ? 1 : -1;
+    const rows = users.filter(u=>!q || (u.name||"").toLowerCase().includes(q) || (u.email||"").toLowerCase().includes(q))
+      .sort((x,y)=>{
+        const vx = col.get(x), vy = col.get(y);
+        if(vx===null || vx===undefined) return (vy===null || vy===undefined) ? 0 : 1; // empty values always sink
+        if(vy===null || vy===undefined) return -1;
+        return (vx<vy ? -1 : vx>vy ? 1 : 0) * dir;
+      });
+    count.textContent = `${rows.length} of ${users.length} ${users.length===1?"user":"users"}`;
+    if(!rows.length){
+      tbody.appendChild(el("tr",{},[el("td",{colspan:String(USER_COLUMNS.length),class:"empty-state"},["No users match your search."])]));
+      return;
+    }
+    rows.forEach(u=>{
+      tbody.appendChild(el("tr",{class:"clickable",tabindex:"0",onclick:()=>{ a.selected=u.id; render(); scrollToTop(); },
+        onkeydown:e=>{ if(e.key==="Enter"){ a.selected=u.id; render(); scrollToTop(); } }},[
+        el("td",{},[el("div",{class:"adm-person"},[
+          el("div",{class:"adm-avatar sm"},[initial(u)]),
+          el("div",{},[
+            el("div",{class:"adm-person-name"},u.name ? [u.name, u.isAdmin ? el("span",{class:"adm-badge"},["Admin"]) : null] : [el("span",{class:"muted"},["No name yet"]), u.isAdmin ? el("span",{class:"adm-badge"},["Admin"]) : null]),
+            el("div",{class:"adm-person-email"},[u.email || ""])
+          ])
+        ])]),
+        el("td",{},[String(u.sessions)]),
+        el("td",{},[fmtPct(u.accuracy)]),
+        el("td",{},[fmtPct(u.latest)]),
+        el("td",{},[deltaNode(u.improvement)]),
+        el("td",{},[u.confidence===null ? el("span",{class:"muted",title:`${u.coverage}/12 chapters attempted`},[`Locked (${u.coverage}/12)`]) : fmtPct(u.confidence)]),
+        el("td",{},[fmtAgo(u.lastActive)])
+      ]));
+    });
+  };
+  search.addEventListener("input",()=>{ a.search = search.value; fill(); }); // refill rows only, so the input keeps focus
+  fill();
+  frag.appendChild(card);
+  return frag;
+}
+
+function renderAdminUserDetail(u){
+  const a = adminState();
+  const frag = document.createElement("div");
+  frag.appendChild(el("a",{class:"linklike adm-back",onclick:()=>{ a.selected=null; render(); scrollToTop(); }},["← All students"]));
+
+  const stats = el("div",{class:"adm-grid-4"});
+  stats.appendChild(adminStat("check", String(u.sessions), "Sessions completed", u.lastActive ? `Last active ${fmtAgo(u.lastActive)}` : "No sessions yet"));
+  stats.appendChild(adminStat("trend", fmtPct(u.accuracy), "Overall accuracy", `${u.correctQ}/${u.totalQ} questions correct`));
+  stats.appendChild(adminStat("activity", u.improvement===null ? "—" : `${u.improvement>=0?"+":"−"}${Math.abs(u.improvement).toFixed(1)}`, "Improvement (pts)", u.improvement===null ? "Needs 2+ sessions" : "Latest sessions vs. first sessions"));
+  stats.appendChild(adminStat("book", u.confidence===null ? "Locked" : fmtPct(u.confidence), "Confidence score", `${u.coverage}/12 chapters attempted`));
+  frag.appendChild(stats);
+
+  const row = el("div",{class:"adm-row"});
+  const trendCard = el("div",{class:"card"});
+  trendCard.appendChild(el("h3",{},["Score by session"]));
+  trendCard.appendChild(u.sessions ? lineChart(u.attempts.map((at,i)=>({
+    label:"#"+(i+1), y:at.rawPct,
+    tip:[`Session ${i+1} — ${modeLabel(at.mode)}`, `${fmtPct(at.rawPct)} (${at.correctCount}/${at.total})`, fmtDate(at.timestamp)]
+  })), `Session scores for ${u.name||u.email}`) : el("p",{class:"empty-state"},["No sessions yet."]));
+  row.appendChild(trendCard);
+
+  const chCard = el("div",{class:"card"});
+  chCard.appendChild(el("h3",{},["Accuracy by chapter"]));
+  chCard.appendChild(chapterBars(u.bySubj));
+  row.appendChild(chCard);
+  frag.appendChild(row);
+
+  const histCard = el("div",{class:"card",style:"margin-top:20px;"});
+  histCard.appendChild(el("h3",{},["Session history"]));
+  if(!u.sessions){
+    histCard.appendChild(el("p",{class:"empty-state"},["No sessions yet."]));
+  } else {
+    const wrap = el("div",{class:"adm-table-wrap"});
+    const t = el("table",{class:"adm-table nw"});
+    t.appendChild(el("thead",{},[el("tr",{},["Date","Session","Questions","Score","Timed"].map(h=>el("th",{},[h])))]));
+    const tb = el("tbody");
+    u.attempts.slice().reverse().forEach(at=>{
+      tb.appendChild(el("tr",{},[
+        el("td",{},[fmtDate(at.timestamp)]),
+        el("td",{},[modeLabel(at.mode)]),
+        el("td",{},[String(at.total)]),
+        el("td",{},[`${fmtPct(at.rawPct)} (${at.correctCount}/${at.total})`]),
+        el("td",{},[at.timed ? (at.timedOut ? "Timed — ran out" : "Timed") : "Untimed"])
+      ]));
+    });
+    t.appendChild(tb);
+    wrap.appendChild(t);
+    histCard.appendChild(wrap);
+  }
+  frag.appendChild(histCard);
+  return frag;
+}
+
+function renderAdmin(){
+  const a = adminState();
+  if(!a.users && !a.loading && !a.error) loadAdminData(); // kicks off a fetch; re-renders when it lands
+  const users = a.users || [];
+  const selected = a.view==="users" && a.selected ? users.find(u=>u.id===a.selected) : null;
+
+  const shell = el("div",{class:"adm"});
+
+  const side = el("aside",{class:"adm-side"});
+  side.appendChild(el("div",{class:"adm-brand"},["FDLE SOCE Mastery",el("small",{},["Admin"])]));
+  const nav = el("nav",{class:"adm-nav"});
+  const navLink = (label, iconName, active, onclick)=>el("a",{class:active?"active":"",onclick,role:"button",tabindex:"0",
+    onkeydown:e=>{ if(e.key==="Enter") onclick(); }},[icon(iconName),label]);
+  nav.appendChild(el("div",{class:"adm-nav-label"},["Dashboard"]));
+  nav.appendChild(navLink("Overview","grid",a.view==="overview",()=>{ a.view="overview"; a.selected=null; render(); scrollToTop(); }));
+  nav.appendChild(navLink("Students","users",a.view==="users",()=>{ a.view="users"; a.selected=null; render(); scrollToTop(); }));
+  nav.appendChild(el("div",{class:"adm-nav-label"},["Practice app"]));
+  nav.appendChild(navLink("Take a practice exam","book",false,()=>{ state.screen="home"; render(); scrollToTop(); }));
+  nav.appendChild(navLink("Sign out","logout",false,signOut));
+  side.appendChild(nav);
+  shell.appendChild(side);
+
+  const main = el("div",{class:"adm-main"});
+  const name = displayName() || "there";
+  const title = selected ? (selected.name || selected.email) : a.view==="users" ? "Students" : `Welcome back, ${name}`;
+  const subtitle = selected ? selected.email + (selected.joined ? ` · joined ${fmtDate(selected.joined)}` : "")
+    : a.view==="users" ? "Every registered user, their scores, and how they're trending."
+    : "Here's how the class is doing across all practice sessions.";
+  const header = el("header",{class:"adm-header"});
+  header.appendChild(el("div",{},[el("h1",{},[title]),el("p",{class:"muted"},[subtitle])]));
+  const right = el("div",{class:"adm-user"});
+  right.appendChild(el("button",{class:"btn btn-outline btn-sm",disabled:a.loading,onclick:()=>{ a.users=null; a.error=null; render(); }},[a.loading ? "Refreshing…" : "Refresh"]));
+  right.appendChild(el("div",{class:"adm-avatar",title:state.user.email},[(name.charAt(0)||"A").toUpperCase()]));
+  right.appendChild(el("div",{},[el("div",{class:"adm-person-name"},[name,el("span",{class:"adm-badge"},["Admin"])]),a.loadedAt?el("div",{class:"adm-person-email"},[`Updated ${a.loadedAt.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}`]):null]));
+  header.appendChild(right);
+  main.appendChild(header);
+
+  const content = el("div",{class:"adm-content"});
+  if(a.error){
+    content.appendChild(el("div",{class:"card"},[
+      el("h3",{},["Couldn't load dashboard data"]),
+      el("p",{class:"auth-error"},[a.error]),
+      el("button",{class:"btn btn-gold btn-sm",onclick:()=>{ a.error=null; a.users=null; render(); }},["Try again"])
+    ]));
+  } else if(!a.users){
+    content.appendChild(el("p",{class:"empty-state"},["Loading dashboard…"]));
+  } else if(selected){
+    content.appendChild(renderAdminUserDetail(selected));
+  } else if(a.view==="users"){
+    content.appendChild(renderAdminUsers(users));
+  } else {
+    content.appendChild(renderAdminOverview(users));
+  }
+  main.appendChild(content);
+  shell.appendChild(main);
+  return shell;
+}
+
 // ---------- INIT ----------
 (async function init(){
   try{
     const { data: { session } } = await sb.auth.getSession();
     state.user = session ? session.user : null;
+    state.profile = await loadProfile();
+    if(isAdmin()) state.screen = "admin"; // admins open straight onto the admin dashboard
     state.attempts = await loadAttempts();
     state.loadingAttempts = false;
     render();
 
     sb.auth.onAuthStateChange(async (event, session)=>{
       if(event === "SIGNED_IN"){
+        // supabase-js also fires SIGNED_IN on tab refocus/token refresh for the same user;
+        // only treat it as a login (and navigate) when the signed-in user actually changed.
+        if(state.user && state.user.id === session.user.id){ state.user = session.user; return; }
         const wasGuest = !state.user;
         state.user = session.user;
         state.authScreen = null;
         state.authBusy = false;
+        state.profile = null;
+        state.nameSkipped = false;
+        state.nameDraft = "";
+        state.admin = null;
         state.screen = "dashboard"; // land on the enhanced dashboard right after auth
         render();
+        state.profile = await loadProfile();
+        if(isAdmin()) state.screen = "admin";
         state.attempts = wasGuest ? await mergeGuestIntoAccount() : await loadAttempts();
         render();
       } else if(event === "SIGNED_OUT"){
         state.user = null;
+        state.profile = null;
+        state.admin = null;
+        state.nameSkipped = false;
+        state.nameDraft = "";
         state.attempts = await loadAttempts();
         state.screen = "home";
         render();
