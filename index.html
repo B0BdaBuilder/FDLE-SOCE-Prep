@@ -116,6 +116,11 @@
   .auth-notice{color:var(--green);font-size:13.5px;margin:0 0 14px;}
   .auth-error{color:var(--red);font-size:13.5px;margin:0 0 14px;}
 
+  .guest-nudge{background:#FAF8F2;border:1px solid var(--line);border-left:3px solid var(--gold);padding:16px 18px;margin:16px 0;}
+  .guest-nudge h3{margin:0 0 6px;font-size:16px;}
+  .guest-nudge p{margin:0 0 12px;font-size:14px;color:var(--ink);}
+  .guest-nudge-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+
   /* ----- Name prompt modal ----- */
   .modal-backdrop{position:fixed;inset:0;background:rgba(13,24,38,0.6);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100;}
   .modal{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--gold);padding:28px;width:100%;max-width:420px;}
@@ -4139,10 +4144,13 @@ const state = {
   lastResult: null,
   reviewMode: false,
   user: null, // Supabase auth user, or null when browsing as a guest
-  authScreen: null, // null | 'login' | 'signup'
+  authScreen: null, // null | 'login' | 'signup' | 'check-email'
   authBusy: false,
   authError: null,
   authNotice: null,
+  authPendingEmail: null, // email awaiting confirmation, shown on the check-email screen
+  authResendBusy: false,
+  authResendNotice: null,
   profile: null, // {name, email, is_admin} row from public.profiles for the signed-in user
   nameDraft: "",
   nameBusy: false,
@@ -4217,6 +4225,7 @@ function render(){
   if(state.screen === "admin" && !isAdmin()) state.screen = "home";
   const adminView = !state.authScreen && state.screen === "admin";
   document.body.classList.toggle("admin-mode", adminView);
+  if(state.authScreen === "check-email"){ root.appendChild(renderCheckEmail()); return; }
   if(state.authScreen){ root.appendChild(renderAuthForm()); return; }
   if(adminView){
     root.appendChild(renderAdmin());
@@ -4236,6 +4245,26 @@ function renderMain(root){
 }
 
 // ---------- Account bar + auth ----------
+function openAuth(screen){
+  state.authScreen = screen; state.authError = null; state.authNotice = null;
+  render();
+  scrollToTop();
+}
+
+// Shown to guests (no account) once they have practice history worth keeping. Guest
+// progress only lives in this browser, and only accounts appear on the admin dashboard.
+function renderGuestNudge(){
+  const box = el("div",{class:"guest-nudge"});
+  box.appendChild(el("h3",{},["Keep your progress with a free account"]));
+  box.appendChild(el("p",{},[
+    "Registering is free, and it's how the app remembers what you've already mastered and where you still need help — so every session builds on the last and your study plan stays focused on your weak spots. Your practice so far will be saved to your account, and you can pick up on any device. Without one, your history lives only in this browser and is lost if you clear your browsing data or switch devices."
+  ]));
+  box.appendChild(el("div",{class:"guest-nudge-actions"},[
+    el("button",{class:"btn btn-gold btn-sm",onclick:()=>openAuth("signup")},["Create free account"]),
+    el("a",{class:"linklike",onclick:()=>openAuth("login")},["I already have an account — log in"])
+  ]));
+  return box;
+}
 function renderAccountBar(){
   const bar = el("div",{class:"account-bar"});
   if(state.user){
@@ -4244,8 +4273,8 @@ function renderAccountBar(){
     bar.appendChild(el("a",{class:"linklike",onclick:signOut},["Sign out"]));
   } else {
     bar.appendChild(el("span",{},["Browsing as guest — progress saved on this device only"]));
-    bar.appendChild(el("a",{class:"linklike",onclick:()=>{state.authScreen="login";state.authError=null;state.authNotice=null;render();}},["Log in"]));
-    bar.appendChild(el("a",{class:"linklike",onclick:()=>{state.authScreen="signup";state.authError=null;state.authNotice=null;render();}},["Sign up"]));
+    bar.appendChild(el("a",{class:"linklike",onclick:()=>openAuth("login")},["Log in"]));
+    bar.appendChild(el("a",{class:"linklike",onclick:()=>openAuth("signup")},["Sign up"]));
   }
   return bar;
 }
@@ -4286,6 +4315,60 @@ function renderAuthForm(){
   return wrap;
 }
 
+// Shown right after signup instead of bouncing back to the login form --
+// a distinct screen (different heading, no password field) so it reads as
+// "one more step" rather than "nothing happened, try again."
+function renderCheckEmail(){
+  const wrap = document.createElement("div");
+  const card = el("div",{class:"card"});
+  card.appendChild(el("h2",{},["Check your email"]));
+  card.appendChild(el("p",{},[
+    "We sent a confirmation link to ",
+    el("strong",{},[state.authPendingEmail || "your email address"]),
+    ". Open it on this device to activate your account, then come back and log in."
+  ]));
+  card.appendChild(el("p",{class:"muted"},[
+    "Don't see it? Check your spam or junk folder -- confirmation emails are occasionally filtered there, especially on Yahoo and Outlook addresses."
+  ]));
+
+  if(state.authResendNotice) card.appendChild(el("p",{class:"auth-notice"},[state.authResendNotice]));
+  if(state.authError) card.appendChild(el("p",{class:"auth-error"},[state.authError]));
+
+  card.appendChild(el("button",{class:"btn btn-outline",disabled: state.authResendBusy,onclick:resendConfirmation},
+    [state.authResendBusy ? "Sending…" : "Resend confirmation email"]));
+
+  card.appendChild(el("p",{style:"margin-top:14px;font-size:13.5px;"},[
+    el("a",{class:"linklike",onclick:()=>{state.authScreen="login"; state.authError=null; state.authNotice=null; render();}},["Already confirmed? Log in"])
+  ]));
+  card.appendChild(el("div",{style:"margin-top:18px;"},[
+    el("a",{class:"linklike",onclick:()=>{state.authScreen=null;state.authError=null;state.authNotice=null;render();}},["← Continue as guest"])
+  ]));
+
+  wrap.appendChild(card);
+  return wrap;
+}
+
+async function resendConfirmation(){
+  if(!state.authPendingEmail) return;
+  state.authResendBusy = true;
+  state.authResendNotice = null;
+  state.authError = null;
+  render();
+  try{
+    const { error } = await sb.auth.resend({
+      type: "signup",
+      email: state.authPendingEmail,
+      options: { emailRedirectTo: location.origin + location.pathname }
+    });
+    if(error) throw error;
+    state.authResendNotice = "Confirmation email sent again. Give it a few minutes to arrive.";
+  }catch(e){
+    state.authError = e.message || "Couldn't resend the email. Please try again.";
+  }
+  state.authResendBusy = false;
+  render();
+}
+
 async function submitAuth(isSignup){
   const email = document.getElementById("auth-email").value.trim();
   const password = document.getElementById("auth-password").value;
@@ -4306,8 +4389,9 @@ async function submitAuth(isSignup){
     if(isSignup && !data.session){
       // Email confirmation is required before the account can sign in.
       state.authBusy = false;
-      state.authScreen = "login";
-      state.authNotice = "Account created. Check your email to confirm your address, then log in below.";
+      state.authPendingEmail = email;
+      state.authScreen = "check-email";
+      state.authResendNotice = null;
       render();
       return;
     }
@@ -4407,6 +4491,7 @@ function renderHome(){
     dashCard.appendChild(el("p",{class:"empty-state"},["No completed practice sessions yet. Finish a quiz to start building your performance history."]));
   } else {
     dashCard.appendChild(el("p",{class:"muted"},[`${state.attempts.length} completed session(s) recorded.`]));
+    if(!state.user) dashCard.appendChild(renderGuestNudge());
     dashCard.appendChild(el("a",{class:"btn btn-outline btn-sm",onclick:()=>{state.screen="dashboard";render();}},["View full performance dashboard"]));
   }
   wrap.appendChild(dashCard);
@@ -4825,6 +4910,8 @@ function renderResults(){
     ]));
   }
 
+  if(!state.user) card.appendChild(renderGuestNudge());
+
   // by subject
   const bySubj = {};
   r.results.forEach(res=>{
@@ -5030,6 +5117,8 @@ function renderDashboard(){
     wrap.appendChild(card);
     return wrap;
   }
+
+  if(!state.user) card.appendChild(renderGuestNudge());
 
   const allResults = state.attempts.flatMap(a=>a.results);
   const totalQ = allResults.length;
